@@ -1,0 +1,17 @@
+inputs/
+outputs/
+assets/
+reference/
+annotation/
+
+packs/
+MELTv2.1.4/
+bowtie2-2.3.4.1/
+outputs2/
+
+timestamp*
+source_step*
+*.txt
+*.log
+*.swp
+*.yml

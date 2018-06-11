@@ -1,0 +1,12 @@
+config/
+inputs/
+outputs/
+assets/
+reference/
+tmp/
+
+.git
+.gitignore
+*.swp
+
+outputs2/

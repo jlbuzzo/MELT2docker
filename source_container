@@ -1,0 +1,27 @@
+#!/bin/bash
+
+
+# Testing...
+#echo "Is it running?"
+#exit
+
+# Some locals.
+MELT_PLACE=/home/MELTv2.1.4
+CONFIG=/home/config
+INPUTS=/home/inputs
+OUTPUTS=/home/outputs
+REFERENCE=/home/reference
+ASSETS=/home/assets
+
+# Create config list.
+readlink -f ../MELTv2.1.4/me_refs/Hg38/*.zip > $CONFIG/Hg38_mei_list.txt
+
+# Execute MELT inside the container.
+java -jar $MELT_PLACE/MELT.jar Single \
+	-a \
+	-c 8 \
+	-t $CONFIG/Hg38_mei_list.txt \
+	-h $REFERENCE/hg38.fa \
+	-n $MELT_PLACE/add_bed_files/Hg38/Hg38.genes.bed \
+	-bamfile $INPUTS/1022306301.bam.sorted.bam \
+	-w $OUTPUTS
