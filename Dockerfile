@@ -66,12 +66,19 @@ RUN make -f /home/bowtie2-2.3.4.1/Makefile -C /home/bowtie2-2.3.4.1
 RUN echo "export PATH=/home/bowtie2-2.3.4.1:$PATH" > /home/.bashrc
 ENV PATH=/home/bowtie2-2.3.4.1:$PATH
 
+# Install Samtools.
+ENV SAMTOOLS_URL=https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2 \
+	SAMTOOLS_PATH=/samtools-1.7
+RUN wget $SAMTOOLS_URL && tar xjf samtools-1.7.tar.bz2 && (cd $SAMTOOLS_PATH && make)
+ENV PATH=$SAMTOOLS_PATH:$PATH
+
+
+
 # Create the work directory and adentrate it.
 WORKDIR /home
 
 # Add the main script.
 ADD ./Makefile .
-ADD ./config.mk .
 
 # An important switch!
 RUN touch ponga_switch

@@ -1,17 +1,22 @@
+# Ignore structural folders.
+config/
 inputs/
 outputs/
 assets/
 reference/
 annotation/
 
+# Ignore other minor folders.
 packs/
+tmp/
 MELTv2.1.4/
 bowtie2-2.3.4.1/
-outputs2/
 
-timestamp*
-source_step*
+# Ignore some files.
 *.txt
 *.log
 *.swp
 *.yml
+
+timestamp*
+source_step*
