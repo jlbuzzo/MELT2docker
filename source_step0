@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+###############################################################################
+#
+# Source step script to run MELT on docker.
+#
+###############################################################################
+
+
+
+### Please, read the README.md file for further explanation. ###
+
+# You can edit any of these variables, but pay attention to the permissions you have.
+
+# Mobile Elements Insertions file. The main search criteria for MELT!
+MEI_FILE=Hg38_mei_list.txt
+
+
+BASE_DIR=$(pwd)						# The root dir from where you run './source_step' and docker.
+									# You can change it, but you must have write permition to it!
+
+CONFIG=$BASE_DIR/config/			# Configuration dir with the ME txt file in it (only read permission).
+INPUTS=$BASE_DIR/inputs/			# Input dir: Put the true BAMs (not links) in it (only read permission).
+OUTPUTS=$BASE_DIR/outputs/			# Output dir: Here goes the final results (write permissions).
+ASSETS=$BASE_DIR/assets/			# Assets dir: Put databases or some extra data in it (only read permission).
+REFERENCE=$BASE_DIR/reference/		# Reference dir: Put reference genomes in it (only read permission).
+ANNOTATION=$BASE_DIR/annotation/	# Annotation dir: Put annotation files (.gff, .gtf or .bed) in it (only read permission).
+TMP=$BASE_DIR/tmp/					# Temporary dir: needless to say (write permitions).
+
+
+# Create directories.
+mkdir -p $CONFIG $INPUTS $OUTPUTS $ASSETS $REFERENCE $ANNOTATION $TMP
+
+# Load configuration file.
+cp $BASE_DIR/config_template.mk $CONFIG/config.mk
+
+# Load MEI file.
+cp $BASE_DIR/$MEI_FILE $CONFIG/$MEI_FILE
+
+###############################################################################
+
+
+
+# Don't edit from here.
+./transductor.sh \
+	-c $CONFIG \
+	-i $INPUTS \
+	-o $OUTPUTS \
+	-d $ASSETS \
+	-r $REFERENCE \
+	-a $ANNOTATION \
+	-t $TMP \
+	$1

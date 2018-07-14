@@ -1,6 +1,6 @@
 ###############################################################################
 #
-# Dockerfile to make a java container for Melt.
+# Dockerfile to make a java container for MELT.
 #
 ###############################################################################
 
@@ -46,27 +46,36 @@ RUN mkdir \
 	/home/config \
 	/home/inputs \
 	/home/outputs \
+	/home/assets \
 	/home/reference \
 	/home/annotation \
-	/home/assets \
-	/home/tmp
+	/home/tmp \
+	/home/extra
 
-# Copy MELT into it's directory.
+### Copy MELT into it's container directory.
+# Copy from internet.
 #RUN mkdir /home/MELT
 #RUN wget URL-MELT -o /home
 #RUN tar xzvf MELTv2.1.4.tar.gz -o /home/MELT
+
+# Offline copy.
 COPY ./MELTv2.1.4 /home/MELTv2.1.4
 
-# Copy Bowtie2 into it's directory and compile it.
+
+### Copy Bowtie2 into it's directory and compile it.
+# Copy from internet.
 #RUN mkdir /home/bowtie2
 #RUN wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.4.1/bowtie2-2.3.4.1-source.zip -o /home
 #RUN unzip bowtie2-2.3.4.1-source.zip -o /home/MELT
+
+# Offline copy.
 COPY ./bowtie2-2.3.4.1 /home/bowtie2-2.3.4.1
 RUN make -f /home/bowtie2-2.3.4.1/Makefile -C /home/bowtie2-2.3.4.1
 RUN echo "export PATH=/home/bowtie2-2.3.4.1:$PATH" > /home/.bashrc
 ENV PATH=/home/bowtie2-2.3.4.1:$PATH
 
-# Install Samtools.
+
+# Install Samtools from internet.
 ENV SAMTOOLS_URL=https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2 \
 	SAMTOOLS_PATH=/samtools-1.7
 RUN wget $SAMTOOLS_URL && tar xjf samtools-1.7.tar.bz2 && (cd $SAMTOOLS_PATH && make)
