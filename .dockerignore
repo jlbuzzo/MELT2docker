@@ -1,12 +1,15 @@
+# Ignore some folders.
 config/
 inputs/
 outputs/
 assets/
 reference/
+annotation/
 tmp/
 
+packs/
+
+# Ignore some files.
 .git
 .gitignore
 *.swp
-
-outputs2/

@@ -5,18 +5,16 @@ outputs/
 assets/
 reference/
 annotation/
+tmp/
 
 # Ignore other minor folders.
 packs/
-tmp/
 MELTv2.1.4/
 bowtie2-2.3.4.1/
 
 # Ignore some files.
-*.txt
 *.log
 *.swp
 *.yml
 
 timestamp*
-source_step*

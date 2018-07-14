@@ -48,10 +48,17 @@ GENOTYPE := java -Xmx2G -jar $(JAR) Genotype
 MAKE_VCF := java -Xmx2G -jar $(JAR) MakeVCF
 
 
+# Temporary directories for runtime processing.
+TEMP_PROCESS_DIR := $(OUTPUT_DIR)/temp/
+DUMP_DIR := $(OUTPUT_DIR)/result/dump/
+
+
 # Pay attention here!
 INPUT := $(INPUTS)
 OUTPUT_DIR := $(OUTPUTS)
 
+
+############################## EDIT HERE! #####################################
 
 # Reference files and annotations.
 GENOMES_DIR := $(REFERENCE)/genomes
@@ -63,10 +70,7 @@ REFERENCE_GENOME_FASTA := $(GENOMES_DIR)/hg38/hg38.fa
 REFERENCE_BED := $(MELT_PLACE)/add_bed_files/Hg38/Hg38.genes.bed
 BAM_COVERAGE := 40
 
-
-# Temporary directories for runtime processing.
-TEMP_PROCESS_DIR := $(OUTPUT_DIR)/temp/
-DUMP_DIR := $(OUTPUT_DIR)/result/dump/
+###############################################################################
 
 
 # Some other variables.
