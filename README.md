@@ -18,11 +18,17 @@ On a command line, in a directory where you have write permission, just type:
 
 # INSTALLATION
 
-### How to get
+### How to get it
 
-You can obtain **MELT2docker** from GitHub with:
+You can obtain **MELT2docker** from its [GitHub repository](https://github.com/jlbuzzo/MELT2docker) or with:
 
-  $ git clone https://github.com/jlbuzzo/melt.git
+  $ git clone https://github.com/jlbuzzo/MELT2docker.git
+
+### Requisites
+
+Before you can mount your Docker image, you must download and extract both,
+[MELT](http://melt.igs.umaryland.edu/download.php) and [Bowtie2](https://ufpr.dl.sourceforge.net/project/bowtie-bio/bowtie2/2.3.4.1/bowtie2-2.3.4.1-source.zip).
+They extracted folders must be in the **MELT2docker** repository's root directory that you just cloned.
 
 # ACKNOWLEDGMENTS
 
