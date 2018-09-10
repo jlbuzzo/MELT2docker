@@ -33,8 +33,9 @@
 ############################## PREAMBLE #######################################
 
 # Include user's configuration file (only the first one).
-CONFIG_FILE ?= ./config/config.mk
-aux := $(word 1, $(abspath $(strip $(wildcard $(CONFIG_FILE)))))
+SWITCH			:= $(shell [ -f .ponga_switch ] && echo 1)
+CONFIG_FILE 	?= $(if $(SWITCH),/home/config/config.mk,config.mk)
+aux 			:= $(word 1, $(abspath $(strip $(wildcard $(CONFIG_FILE)))))
 include $(if $(aux), $(aux), $(error Configuration file not found))
 
 
@@ -485,17 +486,38 @@ validation:
 
 ############################## OTHER TARGETS ##################################
 
+# Simple test.
+simple_test:
+	echo "It's a simple test for arguments: $(ARGS)."
+
+# Infrastructure directories.
+infra_dirs: $(HOST_CONFIG) $(HOST_INPUTS) $(HOST_OUTPUTS) $(HOST_ASSETS)
+infra_dirs: $(HOST_REFERENCE) $(HOST_ANNOTATION) $(HOST_EXTRA) $(HOST_TMP)
+
+# Search for docker.
+docker_have: Dockerfile
+	# Search for docker image.
+
 # Other independent targets.
 dockerize: Dockerfile
 	$(info )
 	$(info Make a docker image.)
 	docker build -t melt:latest .
 
-dockerRun:
+docker_run: Makefile $(CONFIG_FILE) | infra_dirs
 	$(info )
 	$(info Run docker image with MELT command.)
+	cp $(CONFIG_FILE) $(CONFIG)/$(notdir $(CONFIG_FILE))
 	docker run \
 		--rm \
-		-u $$(id -u):$$(id -g) \
-		-v \
-		melt make
+		-ti \
+		-u 1541:1000 \
+		-v $(HOST_CONFIG):$(CONFIG) \
+		-v $(HOST_INPUTS):$(INPUTS) \
+		-v $(HOST_OUTPUTS):$(OUTPUTS) \
+		-v $(HOST_ASSETS):$(ASSETS) \
+		-v $(HOST_REFERENCE):$(REFERENCE) \
+		-v $(HOST_ANNOTATION):$(ANNOTATION) \
+		-v $(HOST_EXTRA):$(EXTRA) \
+		-v $(HOST_TMP):$(TMP) \
+		melt $(ARGS)

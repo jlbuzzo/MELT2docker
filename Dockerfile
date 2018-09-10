@@ -34,6 +34,8 @@ RUN apt-get update && \
 		liblzma-dev \
 		zlib1g-dev \
 		pigz \
+		tar \
+		unzip \
 		bzip2 \
 		gzip && \
 	apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -90,6 +92,6 @@ WORKDIR /home
 ADD ./Makefile .
 
 # An important switch!
-RUN touch ponga_switch
+RUN touch .ponga_switch
 
 CMD ["bash"]
