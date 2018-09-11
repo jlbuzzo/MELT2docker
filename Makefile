@@ -61,8 +61,10 @@ $(if $(INPUTS_PROCESSED),, $(error Variabe INPUTS is empty))
 # the SUFFIXES list criteria.
 #INPUTS_PROCESSED := $(shell $(SCRIPTS)/ufinder.sh $(INPUTS_PROCESSED) $(SUFFIXES))
 
+$(info >>$(INPUTS_PROCESSED)<<)
 # A limited alternative validation process (without 'ufinder' script).
 INPUTS_PROCESSED := $(if $(shell [ -f $(INPUTS_PROCESSED) ] && echo 1), $(wildcard $(filter %$(SUFFIXES), $(shell cat $(INPUTS_PROCESSED)))), $(wildcard $(INPUTS_PROCESSED)/*$(SUFFIXES)))
+$(info >>$(INPUTS_PROCESSED)<<2)
 INPUTS_PROCESSED := $(abspath $(strip $(INPUTS_PROCESSED)))
 
 # Verifying 'SUFFIXES' terminated files' remaining after the filtering of the

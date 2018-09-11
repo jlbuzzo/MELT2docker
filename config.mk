@@ -35,6 +35,7 @@ H_ANNOTATION_d	:= $(H_BASE_d)/annotation
 H_EXTRA_d		:= $(H_BASE_d)/extra
 H_TMP_d			:= $(H_BASE_d)/tmp
 
+H_INPUTS_d		:= /home/scratch60/lbuzzo/MELT/inputs
 
 # Container's base directory: /home.
 C_BASE_d		:= /home
@@ -60,6 +61,9 @@ EXTRA_d			:= $(if $(SWITCH),$(C_EXTRA_d),$(H_EXTRA_d))
 TMP_d			:= $(if $(SWITCH),$(C_TMP_d),$(H_TMP_d))
 
 
+# Pay attention here!
+INPUTS			:= $(INPUTS_d)
+
 
 
 ############################## ANCILLARY VARIABLES ############################
@@ -72,7 +76,7 @@ LINE1_ZIP		:= $(MEI_PLACE)/LINE1_MELT.zip
 ALU_ZIP			:= $(MEI_PLACE)/ALU_MELT.zip
 SVA_ZIP			:= $(MEI_PLACE)/SVA_MELT.zip
 
-BASE_DISCOVERY_d	:= $(BASE_d)/outputs/result
+BASE_DISCOVERY_d	:= $(OUTPUTS_d)/results
 HERVK_DISCOVERY_d	:= $(BASE_DISCOVERY_d)/HERVK
 LINE1_DISCOVERY_d	:= $(BASE_DISCOVERY_d)/LINE1
 ALU_DISCOVERY_d		:= $(BASE_DISCOVERY_d)/ALU
@@ -112,7 +116,3 @@ REFERENCE_BED			:= $(MELT_PLACE)/add_bed_files/Hg38/Hg38.genes.bed
 # Some other variables.
 BAM_COVERAGE	:= 40
 SEARCH_CRIT		:= $(BASE_d)/scripts/search_crit.awk
-
-# Pay attention here!
-INPUTS			:= /home/scratch60/lbuzzo/MELT/inputs/bams.txt
-OUTPUTS_d		:= /home/scratch60/lbuzzo/MELT/outputs
