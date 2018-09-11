@@ -1,4 +1,4 @@
-############################## HEADER #########################################
+############################## HEADER ##########################################
 #
 # Makefile data:
 #
@@ -13,30 +13,32 @@
 #
 # Usage:
 #
-# 		Inputs: INPUT variable (string list).
+# 		Inputs: INPUTS variable (string list).
 # 					The string list must contain, at least, a path to a folder
 # 					or a file in the system.
 #
-# 		Outputs: PROCESSED_INPUT variable (string list).
+# 		Outputs: PROCESSED_INPUTS variable (string list).
 # 					The returned string list caontains all the existent files
 # 					specified in the input args with canonical paths and
 # 					filtered by the SUFFIXES auxilliary variable.
 #
 #		Options:
 #
-###############################################################################
+################################################################################
 
 
 
 
 
-############################## PREAMBLE #######################################
+############################## PREAMBLE ########################################
 
 # Include user's configuration file (only the first one).
 SWITCH			:= $(shell [ -f .ponga_switch ] && echo 1)
-CONFIG_FILE 	?= $(if $(SWITCH),/home/config/config.mk,config.mk)
-aux 			:= $(word 1, $(abspath $(strip $(wildcard $(CONFIG_FILE)))))
+CONFIG_f 		?= $(if $(SWITCH),/home/config/config.mk,config.mk)
+aux 			:= $(word 1, $(abspath $(strip $(wildcard $(CONFIG_f)))))
 include $(if $(aux), $(aux), $(error Configuration file not found))
+
+
 
 
 # Presentation.
@@ -51,26 +53,26 @@ CALL = [$(PIPELINE): $(shell date "+%Y-%m-%d(%H:%M:%S)")]
 
 # ===> VALIDATIONS <===
 
-# Validate INPUT against emptyness.
-INPUT_PROCESSED := $(strip $(INPUT))
-$(if $(INPUT_PROCESSED),, $(error Variabe INPUT is empty))
+# Validate INPUTS against emptyness.
+INPUTS_PROCESSED := $(strip $(INPUTS))
+$(if $(INPUTS_PROCESSED),, $(error Variabe INPUTS is empty))
 
-# Search and validate INPUT from a given string list, directory, or file, by
+# Search and validate INPUTS from a given string list, directory, or file, by
 # the SUFFIXES list criteria.
-#INPUT_PROCESSED := $(shell $(SCRIPTS)/ufinder.sh $(INPUT_PROCESSED) $(SUFFIXES))
+#INPUTS_PROCESSED := $(shell $(SCRIPTS)/ufinder.sh $(INPUTS_PROCESSED) $(SUFFIXES))
 
 # A limited alternative validation process (without 'ufinder' script).
-INPUT_PROCESSED := $(if $(shell [ -f $(INPUT_PROCESSED) ] && echo 1), $(wildcard $(filter %$(SUFFIXES), $(shell cat $(INPUT_PROCESSED)))), $(wildcard $(INPUT_PROCESSED)/*$(SUFFIXES)))
-INPUT_PROCESSED := $(abspath $(strip $(INPUT_PROCESSED)))
+INPUTS_PROCESSED := $(if $(shell [ -f $(INPUTS_PROCESSED) ] && echo 1), $(wildcard $(filter %$(SUFFIXES), $(shell cat $(INPUTS_PROCESSED)))), $(wildcard $(INPUTS_PROCESSED)/*$(SUFFIXES)))
+INPUTS_PROCESSED := $(abspath $(strip $(INPUTS_PROCESSED)))
 
 # Verifying 'SUFFIXES' terminated files' remaining after the filtering of the
-# INPUT_PROCESSED list.
-$(if $(INPUT_PROCESSED),, $(error No valid $(SUFFIXES) file specified))
+# INPUTS_PROCESSED list.
+$(if $(INPUTS_PROCESSED),, $(error No valid $(SUFFIXES) file specified))
 
-# Verifying OUTPUT_DIR previous existence.
-ifneq ($(wildcard $(OUTPUT_DIR)),)
+# Verifying OUTPUTS_d previous existence.
+ifneq ($(wildcard $(OUTPUTS_d)),)
 $(info )
-$(info $(CALL) Directory '$(OUTPUT_DIR)' will be overwritten!)
+$(info $(CALL) Directory '$(OUTPUTS_d)' will be overwritten!)
 endif
 
 
@@ -80,62 +82,61 @@ endif
 # ATTENTION: Variables that are string lists has an '_l' suffix appendedd to
 # the end of their names. Their behavior differently in pattern rules.
 
-OUTPUT_DIR := $(abspath $(strip $(OUTPUT_DIR)))# This is not a string list!
+OUTPUTS_d := $(abspath $(strip $(OUTPUTS_d)))# This is not a string list!
 
 # Folder for timestamps.
-TMSTP := $(OUTPUT_DIR)/tmstp
+TMSTP_d := $(OUTPUTS_d)/tmstp
 
 
-# Carrefully set the INPUT_l variable after success validations.
-INPUT_l := $(INPUT_PROCESSED)
-INPUT_FILENAME_l := $(strip $(notdir $(INPUT_l)))
-INPUT_BASENAME_l := $(strip $(basename $(notdir $(INPUT_l))))
-INPUT_DIR_l := $(strip $(dir $(INPUT_l)))
-#INPUT_DIR_BASENAME_l :=
+# Carrefully set the INPUTS_l variable after success validations.
+INPUTS_l := $(INPUTS_PROCESSED)
+INPUTS_FILENAME_l := $(strip $(notdir $(INPUTS_l)))
+INPUTS_BASENAME_l := $(strip $(basename $(notdir $(INPUTS_l))))
+INPUTS_dl := $(strip $(dir $(INPUTS_l)))
+#INPUTS_BASENAME_dl :=
 
 
-#OUTPUT_l :=
-#OUTPUT_FILENAME_l :=
-#OUTPUT_BASENAME_l :=
-#OUTOUT_DIR_l :=
-OUTPUT_DIR_BASENAME_l := $(addprefix $(OUTPUT_DIR)/, $(INPUT_BASENAME_l))
-OUTPUT_l := $(strip $(join $(OUTPUT_DIR_BASENAME_l), $(addprefix /, $(INPUT_FILENAME_l))))
+#OUTPUTS_l :=
+#OUTPUTS_FILENAME_l :=
+#OUTPUTS_BASENAME_l :=
+#OUTPUTS_dl :=
+OUTPUTS_BASENAME_dl := $(addprefix $(OUTPUTS_d)/, $(INPUTS_BASENAME_l))
+OUTPUTS_l := $(strip $(join $(OUTPUTS_BASENAME_dl), $(addprefix /, $(INPUTS_FILENAME_l))))
 
 
-
-############################## LISTS ##########################################
 
 # Derivated lists: '.bai', '.abnormal', '.disc', '.disc.bai' and others.
-OUTPUT_BAI_l := $(addsuffix .bai, $(OUTPUT_l))
-OUTPUT_ABNORMAL_l := $(addsuffix .abnormal, $(OUTPUT_l))
-OUTPUT_DISC_l := $(addsuffix .disc, $(OUTPUT_l))
-OUTPUT_DISC_BAI_l := $(addsuffix .disc.bai, $(OUTPUT_l))
-OUTPUT_DISC_FQ_l:= $(addsuffix .disc.fq, $(OUTPUT_l))
+OUTPUTS_BAI_l := $(addsuffix .bai, $(OUTPUTS_l))
+OUTPUTS_ABNORMAL_l := $(addsuffix .abnormal, $(OUTPUTS_l))
+OUTPUTS_DISC_l := $(addsuffix .disc, $(OUTPUTS_l))
+OUTPUTS_DISC_BAI_l := $(addsuffix .disc.bai, $(OUTPUTS_l))
+OUTPUTS_DISC_FQ_l:= $(addsuffix .disc.fq, $(OUTPUTS_l))
 
-# Timestamp lists, terminated in '_tml'.
+# Timestamp lists, terminated in '_lt'.
 # Lists for individual analysis.
-OUTPUT_HERVK_INDIV_tml := $(addsuffix .hervk.indiv.tmstp, $(OUTPUT_l))
-OUTPUT_LINE1_INDIV_tml := $(addsuffix .line1.indiv.tmstp, $(OUTPUT_l))
-OUTPUT_ALU_INDIV_tml := $(addsuffix .alu.indiv.tmstp, $(OUTPUT_l))
-OUTPUT_SVA_INDIV_tml := $(addsuffix .sva.indiv.tmstp, $(OUTPUT_l))
+OUTPUTS_HERVK_INDIV_lt := $(addsuffix .hervk.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_LINE1_INDIV_lt := $(addsuffix .line1.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_ALU_INDIV_lt := $(addsuffix .alu.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_SVA_INDIV_lt := $(addsuffix .sva.indiv.tmstp, $(OUTPUTS_l))
 
 # Simple timestamps files for group analysis.
-OUTPUT_HERVK_GRP := $(TMSTP)/common.bam.hervk.group.tmstp
-OUTPUT_LINE1_GRP := $(TMSTP)/common.bam.line1.group.tmstp
-OUTPUT_ALU_GRP := $(TMSTP)/common.bam.alu.group.tmstp
-OUTPUT_SVA_GRP := $(TMSTP)/common.bam.sva.group.tmstp
+OUTPUTS_HERVK_GRP_t := $(TMSTP_d)/common.bam.hervk.group.tmstp
+OUTPUTS_LINE1_GRP_t := $(TMSTP_d)/common.bam.line1.group.tmstp
+OUTPUTS_ALU_GRP_t := $(TMSTP_d)/common.bam.alu.group.tmstp
+OUTPUTS_SVA_GRP_t := $(TMSTP_d)/common.bam.sva.group.tmstp
 
 # Lists for genotype analysis.
-OUTPUT_HERVK_GEN_tml := $(addsuffix .hervk.gen.tmstp, $(OUTPUT_l))
-OUTPUT_LINE1_GEN_tml := $(addsuffix .line1.gen.tmstp, $(OUTPUT_l))
-OUTPUT_ALU_GEN_tml := $(addsuffix .alu.gen.tmstp, $(OUTPUT_l))
-OUTPUT_SVA_GEN_tml := $(addsuffix .sva.gen.tmstp, $(OUTPUT_l))
+OUTPUTS_HERVK_GEN_lt := $(addsuffix .hervk.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_LINE1_GEN_lt := $(addsuffix .line1.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_ALU_GEN_lt := $(addsuffix .alu.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_SVA_GEN_lt := $(addsuffix .sva.gen.tmstp, $(OUTPUTS_l))
 
 # Simple VCF files.
-OUTPUT_HERVK_VCF := $(HERVK_DISCOVERY_DIR)/HERVK.final_comp.vcf
-OUTPUT_LINE1_VCF := $(LINE1_DISCOVERY_DIR)/LINE1.final_comp.vcf
-OUTPUT_ALU_VCF := $(ALU_DISCOVERY_DIR)/ALU.final_comp.vcf
-OUTPUT_SVA_VCF := $(SVA_DISCOVERY_DIR)/SVA.final_comp.vcf
+OUTPUTS_HERVK_VCF := $(HERVK_DISCOVERY_d)/HERVK.final_comp.vcf
+OUTPUTS_LINE1_VCF := $(LINE1_DISCOVERY_d)/LINE1.final_comp.vcf
+OUTPUTS_ALU_VCF := $(ALU_DISCOVERY_d)/ALU.final_comp.vcf
+OUTPUTS_SVA_VCF := $(SVA_DISCOVERY_d)/SVA.final_comp.vcf
+
 
 
 # Export all variables.
@@ -148,28 +149,28 @@ export
 # Enable some prints, if variable DBG="yes".
 ifeq ($(DBG),yes)
 $(info )
-$(info OUTPUT_DIR: >$(OUTPUT_DIR).)
+$(info OUTPUTS_d: >$(OUTPUTS_d).)
 $(info )
-$(info INPUT_l: >$(INPUT_l).)
-$(info INPUT_FILENAME_l: >$(INPUT_FILENAME_l).)
-$(info INPUT_BASENAME_l: >$(INPUT_BASENAME_l).)
-$(info INPUT_DIR_l: >$(INPUT_DIR_l).)
-$(info INPUT_DIR_BASENAME_l: >$(INPUT_DIR_BASENAME_l).)
+$(info INPUTS_l: >$(INPUTS_l).)
+$(info INPUTS_FILENAME_l: >$(INPUTS_FILENAME_l).)
+$(info INPUTS_BASENAME_l: >$(INPUTS_BASENAME_l).)
+$(info INPUTS_d_l: >$(INPUTS_dl).)
+$(info INPUTS_BASENAME_dl: >$(INPUTS_BASENAME_dl).)
 $(info )
-$(info OUTPUT_l: >$(OUTPUT_l).)
-$(info OUTPUT_FILENAME_l: >$(OUTPUT_FILENAME_l).)
-$(info OUTPUT_BASENAME_l: >$(OUTPUT_BASENAME_l).)
-$(info OUTPUT_DIR_l: >$(OUTPUT_DIR_l).)
-$(info OUTPUT_DIR_BASENAME_l: >$(OUTPUT_DIR_BASENAME_l).)
+$(info OUTPUTS_l: >$(OUTPUTS_l).)
+$(info OUTPUTS_FILENAME_l: >$(OUTPUTS_FILENAME_l).)
+$(info OUTPUTS_BASENAME_l: >$(OUTPUTS_BASENAME_l).)
+$(info OUTPUTS_d_l: >$(OUTPUTS_dl).)
+$(info OUTPUTS_BASENAME_dl: >$(OUTPUTS_BASENAME_dl).)
 $(info )
-$(info OUTPUT_ABNORMAL_l: >$(OUTPUT_ABNORMAL_l).)
-$(info OUTPUT_HERVK_INDIV_tml: >$(OUTPUT_HERVK_INDIV_tml).)
-$(info OUTPUT_ALU_GEN_tml: >$(OUTPUT_ALU_GEN_tml).)
+$(info OUTPUTS_ABNORMAL_l: >$(OUTPUTS_ABNORMAL_l).)
+$(info OUTPUTS_HERVK_INDIV_lt: >$(OUTPUTS_HERVK_INDIV_lt).)
+$(info OUTPUTS_ALU_GEN_lt: >$(OUTPUTS_ALU_GEN_lt).)
 ## The pattern must be extended to all, must be constant, not an array of
 ## different values. See:
 $(info )
-$(info 1>$(patsubst /home/leonel/%$(SUFFIX), %.bam.o, $(INPUT)).)
-$(info 2>$(patsubst $(OUTPUT_DIR)%.abnormal,%.abnormal.o, $(OUTPUT_ABNORMAL_l)).)
+$(info 1>$(patsubst /home/leonel/%$(SUFFIX), %.bam.o, $(INPUTS)).)
+$(info 2>$(patsubst $(OUTPUTS_d)%.abnormal,%.abnormal.o, $(OUTPUTS_ABNORMAL_l)).)
 $(info )
 endif
 
@@ -182,18 +183,6 @@ endif
 
 ############################## LASY EVALUATION VARIABLES ######################
 
-# Look for a *.sorted.bam.bai file, according to the link to 'OUTPUT_l'.
-#REQ_BAI = $(shell readlink -f $(filter %$(*F)$(SUFFIXES), $(OUTPUT_l)))
-#aux2 = $(strip $(filter %.sorted.bam, $(REQ_BAI)))
-#STBAI = $(shell find $(dir $(REQ_BAI)) -type f -name '$(*F)*.bai' -regex '.*sorted.*')
-#NSTBAI = $(shell find $(dir $(REQ_BAI)) -type f -name '$(*F)*.bai' -not -regex '.*sorted.*')
-#BAI = $(if $(aux2),$(STBAI),$(NSTBAI))
-
-# Ancilary variables to this target.
-REQ = $(filter %$(*F)$(SUFFIXES), $(INPUT_l))
-#CMD = $(shell samtools view -H $(REQ) 2> /dev/null | head -n1 | cut -f3)
-#BAM = $(shell readlink -f $(REQ))
-#STBAM = $(shell find $(dir $(BAM)) -type f -name '*$(*F)*.sorted.bam')
 
 ############################## MELT MAIN TARGETS ##############################
 
@@ -210,53 +199,53 @@ all: all_vcf
 
 # Token target:
 all_vcf: hervk_vcf line1_vcf alu_vcf sva_vcf
-hervk_vcf: $(OUTPUT_HERVK_VCF)
-line1_vcf: $(OUTPUT_LINE1_VCF)
-alu_vcf: $(OUTPUT_ALU_VCF)
-sva_vcf: $(OUTPUT_SVA_VCF)
+hervk_vcf: $(OUTPUTS_HERVK_VCF)
+line1_vcf: $(OUTPUTS_LINE1_VCF)
+alu_vcf: $(OUTPUTS_ALU_VCF)
+sva_vcf: $(OUTPUTS_SVA_VCF)
 
-$(OUTPUT_HERVK_VCF): %HERVK.final_comp.vcf: $(OUTPUT_HERVK_GEN_tml)
+$(OUTPUTS_HERVK_VCF): %HERVK.final_comp.vcf: $(OUTPUTS_HERVK_GEN_lt)
 	$(info )
 	$(info $(CALL) Create VCF for HERVK from files $^.)
 	$(MAKE_VCF) \
-		-genotypingdir $(HERVK_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-genotypingdir $(HERVK_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(HERVK_ZIP) \
-		-w $(HERVK_DISCOVERY_DIR) \
-		-p $(HERVK_DISCOVERY_DIR) \
+		-w $(HERVK_DISCOVERY_d) \
+		-p $(HERVK_DISCOVERY_d) \
 		-o $(@D)
 
-$(OUTPUT_LINE1_VCF): %LINE1.final_comp.vcf: $(OUTPUT_LINE1_GEN_tml)
+$(OUTPUTS_LINE1_VCF): %LINE1.final_comp.vcf: $(OUTPUTS_LINE1_GEN_lt)
 	$(info )
 	$(info $(CALL) Create VCF for LINE1 from files $^.)
 	$(MAKE_VCF) \
-		-genotypingdir $(LINE1_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-genotypingdir $(LINE1_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(LINE1_ZIP) \
-		-w $(LINE1_DISCOVERY_DIR) \
-		-p $(LINE1_DISCOVERY_DIR) \
+		-w $(LINE1_DISCOVERY_d) \
+		-p $(LINE1_DISCOVERY_d) \
 		-o $(@D)
 
-$(OUTPUT_ALU_VCF): %ALU.final_comp.vcf: $(OUTPUT_ALU_GEN_tml)
+$(OUTPUTS_ALU_VCF): %ALU.final_comp.vcf: $(OUTPUTS_ALU_GEN_lt)
 	$(info )
 	$(info $(CALL) Create VCF for ALU from files $^.)
 	$(MAKE_VCF) \
-		-genotypingdir $(ALU_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-genotypingdir $(ALU_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(ALU_ZIP) \
-		-w $(ALU_DISCOVERY_DIR) \
-		-p $(ALU_DISCOVERY_DIR) \
+		-w $(ALU_DISCOVERY_d) \
+		-p $(ALU_DISCOVERY_d) \
 		-o $(@D)
 
-$(OUTPUT_SVA_VCF): %SVA.final_comp.vcf: $(OUTPUT_SVA_GEN_tml)
+$(OUTPUTS_SVA_VCF): %SVA.final_comp.vcf: $(OUTPUTS_SVA_GEN_lt)
 	$(info )
 	$(info $(CALL) Create VCF for SVA from files $^.)
 	$(MAKE_VCF) \
-		-genotypingdir $(SVA_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-genotypingdir $(SVA_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(SVA_ZIP) \
-		-w $(SVA_DISCOVERY_DIR) \
-		-p $(SVA_DISCOVERY_DIR) \
+		-w $(SVA_DISCOVERY_d) \
+		-p $(SVA_DISCOVERY_d) \
 		-o $(@D)
 
 
@@ -265,53 +254,53 @@ $(OUTPUT_SVA_VCF): %SVA.final_comp.vcf: $(OUTPUT_SVA_GEN_tml)
 
 # Token target:
 all_gen: hervk_gen line1_gen alu_gen sva_gen
-hervk_gen: $(OUTPUT_HERVK_GEN_tml)
-line1_gen: $(OUTPUT_LINE1_GEN_tml)
-alu_gen: $(OUTPUT_ALU_GEN_tml)
-sva_gen: $(OUTPUT_SVA_GEN_tml)
+hervk_gen: $(OUTPUTS_HERVK_GEN_lt)
+line1_gen: $(OUTPUTS_LINE1_GEN_lt)
+alu_gen: $(OUTPUTS_ALU_GEN_lt)
+sva_gen: $(OUTPUTS_SVA_GEN_lt)
 
-$(OUTPUT_HERVK_GEN_tml): %.bam.hervk.gen.tmstp: %.bam $(OUTPUT_HERVK_GRP)
+$(OUTPUTS_HERVK_GEN_lt): %.bam.hervk.gen.tmstp: %.bam $(OUTPUTS_HERVK_GRP_t)
 	$(info )
 	$(info $(CALL) Genotyping HERVK in file $<.)
 	$(GENOTYPE) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(HERVK_ZIP) \
-		-w $(HERVK_DISCOVERY_DIR) \
-		-p $(HERVK_DISCOVERY_DIR)
+		-w $(HERVK_DISCOVERY_d) \
+		-p $(HERVK_DISCOVERY_d)
 	touch $@
 
-$(OUTPUT_LINE1_GEN_tml): %.bam.line1.gen.tmstp: %.bam $(OUTPUT_LINE1_GRP)
+$(OUTPUTS_LINE1_GEN_lt): %.bam.line1.gen.tmstp: %.bam $(OUTPUTS_LINE1_GRP_t)
 	$(info )
 	$(info $(CALL) Genotyping LINE1 in file $<.)
 	$(GENOTYPE) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(LINE1_ZIP) \
-		-w $(LINE1_DISCOVERY_DIR) \
-		-p $(LINE1_DISCOVERY_DIR)
+		-w $(LINE1_DISCOVERY_d) \
+		-p $(LINE1_DISCOVERY_d)
 	touch $@
 
-$(OUTPUT_ALU_GEN_tml): %.bam.alu.gen.tmstp: %.bam $(OUTPUT_ALU_GRP)
+$(OUTPUTS_ALU_GEN_lt): %.bam.alu.gen.tmstp: %.bam $(OUTPUTS_ALU_GRP_t)
 	$(info )
 	$(info $(CALL) Genotyping ALU in file $<.)
 	$(GENOTYPE) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(ALU_ZIP) \
-		-w $(ALU_DISCOVERY_DIR) \
-		-p $(ALU_DISCOVERY_DIR)
+		-w $(ALU_DISCOVERY_d) \
+		-p $(ALU_DISCOVERY_d)
 	touch $@
 
-$(OUTPUT_SVA_GEN_tml): %.bam.sva.gen.tmstp: %.bam $(OUTPUT_SVA_GRP)
+$(OUTPUTS_SVA_GEN_lt): %.bam.sva.gen.tmstp: %.bam $(OUTPUTS_SVA_GRP_t)
 	$(info )
 	$(info $(CALL) Genotyping SVA in file $<.)
 	$(GENOTYPE) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(SVA_ZIP) \
-		-w $(SVA_DISCOVERY_DIR) \
-		-p $(SVA_DISCOVERY_DIR)
+		-w $(SVA_DISCOVERY_d) \
+		-p $(SVA_DISCOVERY_d)
 	touch $@
 
 
@@ -322,52 +311,52 @@ $(OUTPUT_SVA_GEN_tml): %.bam.sva.gen.tmstp: %.bam $(OUTPUT_SVA_GRP)
 
 # Token target:
 all_group: hervk_group line1_group alu_group sva_group
-hervk_group: $(OUTPUT_HERVK_GRP)
-line1_group: $(OUTPUT_LINE1_GRP)
-alu_group: $(OUTPUT_ALU_GRP)
-sva_group: $(OUTPUT_SVA_GRP)
+hervk_group: $(OUTPUTS_HERVK_GRP_t)
+line1_group: $(OUTPUTS_LINE1_GRP_t)
+alu_group: $(OUTPUTS_ALU_GRP_t)
+sva_group: $(OUTPUTS_SVA_GRP_t)
 
-$(OUTPUT_HERVK_GRP): $(OUTPUT_HERVK_INDIV_tml) | $(TMSTP)
+$(OUTPUTS_HERVK_GRP_t): $(OUTPUTS_HERVK_INDIV_lt) | $(TMSTP_d)
 	$(info )
 	$(info $(CALL) Group analysis of HERVK on files $^.)
 	$(GROUP_ANALYSIS) \
-		-discoverydir $(HERVK_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-discoverydir $(HERVK_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(HERVK_ZIP) \
-		-w $(HERVK_DISCOVERY_DIR) \
+		-w $(HERVK_DISCOVERY_d) \
 		-n $(REFERENCE_BED)
 	touch $@
 
-$(OUTPUT_LINE1_GRP): $(OUTPUT_LINE1_INDIV_tml) | $(TMSTP)
+$(OUTPUTS_LINE1_GRP_t): $(OUTPUTS_LINE1_INDIV_lt) | $(TMSTP_d)
 	$(info )
 	$(info $(CALL) Group analysis of LINE1 on files $^.)
 	$(GROUP_ANALYSIS) \
-		-discoverydir $(LINE1_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-discoverydir $(LINE1_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(LINE1_ZIP) \
-		-w $(LINE1_DISCOVERY_DIR) \
+		-w $(LINE1_DISCOVERY_d) \
 		-n $(REFERENCE_BED)
 	touch $@
 
-$(OUTPUT_ALU_GRP): $(OUTPUT_ALU_INDIV_tml) | $(TMSTP)
+$(OUTPUTS_ALU_GRP_t): $(OUTPUTS_ALU_INDIV_lt) | $(TMSTP_d)
 	$(info )
 	$(info $(CALL) Group analysis of ALU on files $^.)
 	$(GROUP_ANALYSIS) \
-		-discoverydir $(ALU_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-discoverydir $(ALU_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(ALU_ZIP) \
-		-w $(ALU_DISCOVERY_DIR) \
+		-w $(ALU_DISCOVERY_d) \
 		-n $(REFERENCE_BED)
 	touch $@
 
-$(OUTPUT_SVA_GRP): $(OUTPUT_SVA_INDIV_tml) | $(TMSTP)
+$(OUTPUTS_SVA_GRP_t): $(OUTPUTS_SVA_INDIV_lt) | $(TMSTP_d)
 	$(info )
 	$(info $(CALL) Group analysis of SVA on files $^.)
 	$(GROUP_ANALYSIS) \
-		-discoverydir $(SVA_DISCOVERY_DIR) \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-discoverydir $(SVA_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
 		-t $(SVA_ZIP) \
-		-w $(SVA_DISCOVERY_DIR) \
+		-w $(SVA_DISCOVERY_d) \
 		-n $(REFERENCE_BED)
 	touch $@
 
@@ -377,53 +366,53 @@ $(OUTPUT_SVA_GRP): $(OUTPUT_SVA_INDIV_tml) | $(TMSTP)
 
 # Token target:
 all_indiv: hervk_indiv line1_indiv alu_indiv sva_indiv
-hervk_indiv: $(OUTPUT_HERVK_INDIV_tml)
-line1_indiv: $(OUTPUT_LINE1_INDIV_tml)
-alu_indiv: $(OUTPUT_ALU_INDIV_tml)
-sva_indiv: $(OUTPUT_SVA_INDIV_tml)
+hervk_indiv: $(OUTPUTS_HERVK_INDIV_lt)
+line1_indiv: $(OUTPUTS_LINE1_INDIV_lt)
+alu_indiv: $(OUTPUTS_ALU_INDIV_lt)
+sva_indiv: $(OUTPUTS_SVA_INDIV_lt)
 
 # Setting timestamps for several MEI types processes.
-$(OUTPUT_HERVK_INDIV_tml): %.bam.hervk.indiv.tmstp: %.bam %.bam.disc
+$(OUTPUTS_HERVK_INDIV_lt): %.bam.hervk.indiv.tmstp: %.bam %.bam.disc
 	$(info )
 	$(info $(CALL) Individual analysis of HERVK in file $<.)
 	$(INDIV_ANALYSIS) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(HERVK_ZIP) \
-		-w $(HERVK_DISCOVERY_DIR) \
+		-w $(HERVK_DISCOVERY_d) \
 		-c $(BAM_COVERAGE)
 	touch $@
 
-$(OUTPUT_LINE1_INDIV_tml): %.bam.line1.indiv.tmstp: %.bam %.bam.disc
+$(OUTPUTS_LINE1_INDIV_lt): %.bam.line1.indiv.tmstp: %.bam %.bam.disc
 	$(info )
 	$(info $(CALL) Individual analysis of LINE1 in file $<.)
 	$(INDIV_ANALYSIS) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(LINE1_ZIP) \
-		-w $(LINE1_DISCOVERY_DIR) \
+		-w $(LINE1_DISCOVERY_d) \
 		-c $(BAM_COVERAGE)
 	touch $@
 
-$(OUTPUT_ALU_INDIV_tml): %.bam.alu.indiv.tmstp: %.bam %.bam.disc
+$(OUTPUTS_ALU_INDIV_lt): %.bam.alu.indiv.tmstp: %.bam %.bam.disc
 	$(info )
 	$(info $(CALL) Individual analysis of ALU in file $<.)
 	$(INDIV_ANALYSIS) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(ALU_ZIP) \
-		-w $(ALU_DISCOVERY_DIR) \
+		-w $(ALU_DISCOVERY_d) \
 		-c $(BAM_COVERAGE)
 	touch $@
 
-$(OUTPUT_SVA_INDIV_tml): %.bam.sva.indiv.tmstp: %.bam %.bam.disc
+$(OUTPUTS_SVA_INDIV_lt): %.bam.sva.indiv.tmstp: %.bam %.bam.disc
 	$(info )
 	$(info $(CALL) Individual analysis of SVA in file $<.)
 	$(INDIV_ANALYSIS) \
 		-bamfile $< \
-		-h $(REFERENCE_GENOME_FASTA) \
+		-h $(REFERENCE_GENOME) \
 		-t $(SVA_ZIP) \
-		-w $(SVA_DISCOVERY_DIR) \
+		-w $(SVA_DISCOVERY_d) \
 		-c $(BAM_COVERAGE)
 	touch $@
 
@@ -432,22 +421,33 @@ $(OUTPUT_SVA_INDIV_tml): %.bam.sva.indiv.tmstp: %.bam %.bam.disc
 ############################## PREPROCESSING ##################################
 
 # Token target:
-preprocess: $(OUTPUT_DISC_l)
+preprocess: $(OUTPUTS_DISC_l)
 
 # Preprocessing BAMs.
-$(OUTPUT_DISC_l): %.bam.disc: %.bam %.bam.bai
+$(OUTPUTS_DISC_l): %.bam.disc: %.bam %.bam.bai
 	$(info )
 	$(info $(CALL) Preprocessing file $<.)
-	$(PREPROCESS) -bamfile $< -h $(REFERENCE_GENOME_FASTA)
+	$(PREPROCESS) -bamfile $< -h $(REFERENCE_GENOME)
+
+
+# Projects' complementary infastructure directories.
+$(HERVK_d) $(LINE1_d) $(ALU_d) $(SVA_d) $(TMSTP_d):
+	$(info )
+	$(info $(CALL) Create directory: $@.)
+	mkdir -p $@
 
 
 
 ############################## COMMON TARGETS #################################
 
-# Token target:
-common: $(OUTPUT_BAI_l) 
+# Lazy evaluation variable for this part.
+REQ = $(filter %$(*F)$(SUFFIXES), $(INPUTS_l))
 
-$(OUTPUT_BAI_l): %.bam.bai: %.bam
+# Token target:
+common: $(OUTPUTS_BAI_l) 
+
+# Make .bai files list.
+$(OUTPUTS_BAI_l): %.bam.bai: %.bam
 	$(info )
 	$(info $(CALL) Indexing file $^.)
 	if [ -s "$$(readlink -f $<).bai" ]; then \
@@ -456,11 +456,11 @@ $(OUTPUT_BAI_l): %.bam.bai: %.bam
 		samtools index -b -@ 8 $< $@; \
 	fi
 
+# Make .bam files list.
 .SECONDEXPANSION:
-$(OUTPUT_l): %.bam: $$(REQ) | validation $(OUTPUT_DIR)
+$(OUTPUTS_l): %.bam: $$(REQ) | validation $(OUTPUTS_d)
 	$(info )
 	$(info $(CALL) Creating link for input file: $(REQ).)
-	$(info $(CALL) SEE: $@ | $< | $^.)
 	mkdir -p $(*D)
 	if [ "$$(samtools view -H $< 2> /dev/null | head -n1 | cut -f3)" = "SO:coordinate" ]; then \
 		ln -sf "$$(readlink -f $<)" $@; \
@@ -470,29 +470,30 @@ $(OUTPUT_l): %.bam: $$(REQ) | validation $(OUTPUT_DIR)
 		samtools sort -O BAM -m 8G -@ 8 $< -o $@; \
 	fi
 
+# Infrastructure directories.
+infrastructure_d: $(CONFIG_d) $(INPUTSS_d) $(OUTPUTSS_d) $(ASSETS_d)
+infrastructure_d: $(REFERENCE_d) $(ANNOTATION_d) $(EXTRA_d) $(TMP_d)
 
-# Directories.
-$(OUTPUT_DIR) $(HERVK_DIR) $(LINE1_DIR) $(ALU_DIR) $(SVA_DIR) $(TMSTP):
+# Projects' complementary infastructure directories.
+$(CONFIG_d) $(INPUTS_d) $(OUTPUTS_d) $(ASSETS_d) $(REFERENCE_d) $(ANNOTATION_d) $(EXTRA_d) $(TMP_d):
 	$(info )
 	$(info $(CALL) Create directory: $@.)
 	mkdir -p $@
-
 
 validation:
 	$(info )
 	$(info $(CALL) Making $@.)
 
-
-
-############################## OTHER TARGETS ##################################
-
-# Simple test.
+# Simple multipurpose test.
 simple_test:
 	echo "It's a simple test for arguments: $(ARGS)."
 
-# Infrastructure directories.
-infra_dirs: $(HOST_CONFIG) $(HOST_INPUTS) $(HOST_OUTPUTS) $(HOST_ASSETS)
-infra_dirs: $(HOST_REFERENCE) $(HOST_ANNOTATION) $(HOST_EXTRA) $(HOST_TMP)
+
+
+############################## EXTRA TARGETS ###################################
+
+
+
 
 # Search for docker.
 docker_have: Dockerfile
@@ -504,20 +505,20 @@ dockerize: Dockerfile
 	$(info Make a docker image.)
 	docker build -t melt:latest .
 
-docker_run: Makefile $(CONFIG_FILE) | infra_dirs
+docker_run: Makefile $(CONFIG_f) | infrastructure_d
 	$(info )
 	$(info Run docker image with MELT command.)
-	cp $(CONFIG_FILE) $(CONFIG)/$(notdir $(CONFIG_FILE))
+	cp $(CONFIG_f) $(CONFIG_d)/$(notdir $(CONFIG_f))
 	docker run \
 		--rm \
 		-ti \
 		-u 1541:1000 \
-		-v $(HOST_CONFIG):$(CONFIG) \
-		-v $(HOST_INPUTS):$(INPUTS) \
-		-v $(HOST_OUTPUTS):$(OUTPUTS) \
-		-v $(HOST_ASSETS):$(ASSETS) \
-		-v $(HOST_REFERENCE):$(REFERENCE) \
-		-v $(HOST_ANNOTATION):$(ANNOTATION) \
-		-v $(HOST_EXTRA):$(EXTRA) \
-		-v $(HOST_TMP):$(TMP) \
+		-v $(H_CONFIG_d):$(C_CONFIG_d) \
+		-v $(H_INPUTS_d):$(C_INPUTS_d) \
+		-v $(H_OUTPUTS_d):$(C_OUTPUTS_d) \
+		-v $(H_ASSETS_d):$(C_ASSETS_d) \
+		-v $(H_REFERENCE_d):$(C_REFERENCE_d) \
+		-v $(H_ANNOTATION_d):$(C_ANNOTATION_d) \
+		-v $(H_EXTRA_d):$(C_EXTRA_d) \
+		-v $(H_TMP_d):$(C_TMP_d) \
 		melt $(ARGS)

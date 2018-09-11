@@ -49,52 +49,48 @@ C_TMP_d			:= $(C_BASE_d)/tmp
 
 
 # A common internal representation.
-BASE_d			:= $(if $(SWITCH),C_BASE_d,H_BASE_d)
-CONFIG_d		:= $(if $(SWITCH),C_CONFIG_d,H_CONFIG_d)
-INPUTS_d		:= $(if $(SWITCH),C_INPUTS_d,H_INPUTS_d)
-OUTPUTS_d		:= $(if $(SWITCH),C_OUTPUTS_d,H_OUTPUTS_d)
-ASSETS_d		:= $(if $(SWITCH),C_ASSETS_d,H_ASSETS_d)
-REFERENCE_d		:= $(if $(SWITCH),C_REFERENCE_d,H_REFERENCE_d)
-ANNOTATION_d	:= $(if $(SWITCH),C_ANNOTATION_d,H_ANNOTATION_d)
-EXTRA_d			:= $(if $(SWITCH),C_EXTRA_d,H_EXTRA_d)
-TMP_d			:= $(if $(SWITCH),C_TMP_d,H_TMP_d)
+BASE_d			:= $(if $(SWITCH),$(C_BASE_d),$(H_BASE_d))
+CONFIG_d		:= $(if $(SWITCH),$(C_CONFIG_d),$(H_CONFIG_d))
+INPUTS_d		:= $(if $(SWITCH),$(C_INPUTS_d),$(H_INPUTS_d))
+OUTPUTS_d		:= $(if $(SWITCH),$(C_OUTPUTS_d),$(H_OUTPUTS_d))
+ASSETS_d		:= $(if $(SWITCH),$(C_ASSETS_d),$(H_ASSETS_d))
+REFERENCE_d		:= $(if $(SWITCH),$(C_REFERENCE_d),$(H_REFERENCE_d))
+ANNOTATION_d	:= $(if $(SWITCH),$(C_ANNOTATION_d),$(H_ANNOTATION_d))
+EXTRA_d			:= $(if $(SWITCH),$(C_EXTRA_d),$(H_EXTRA_d))
+TMP_d			:= $(if $(SWITCH),$(C_TMP_d),$(H_TMP_d))
 
-
-# Pay attention here!
-INPUT			:= /home/scratch60/lbuzzo/MELT/inputs/bams.txt
-OUTPUT_d		:= /home/scratch60/lbuzzo/MELT/outputs
 
 
 
 ############################## ANCILLARY VARIABLES ############################
 
 # Results.
-MELT_PLACE := $(BASE_DIR)/MELTv2.1.4
-MEI_PLACE := $(MELT_PLACE)/me_refs/Hg38/
-HERVK_ZIP := $(MEI_PLACE)/HERVK_MELT.zip
-LINE1_ZIP := $(MEI_PLACE)/LINE1_MELT.zip
-ALU_ZIP := $(MEI_PLACE)/ALU_MELT.zip
-SVA_ZIP := $(MEI_PLACE)/SVA_MELT.zip
+MELT_PLACE		:= $(BASE_d)/MELTv2.1.4
+MEI_PLACE		:= $(MELT_PLACE)/me_refs/Hg38/
+HERVK_ZIP		:= $(MEI_PLACE)/HERVK_MELT.zip
+LINE1_ZIP		:= $(MEI_PLACE)/LINE1_MELT.zip
+ALU_ZIP			:= $(MEI_PLACE)/ALU_MELT.zip
+SVA_ZIP			:= $(MEI_PLACE)/SVA_MELT.zip
 
-BASE_DISCOVERY := $(BASE_DIR)/outputs/result
-HERVK_DISCOVERY_DIR := $(BASE_DISCOVERY)/HERVK
-LINE1_DISCOVERY_DIR := $(BASE_DISCOVERY)/LINE1
-ALU_DISCOVERY_DIR := $(BASE_DISCOVERY)/ALU
-SVA_DISCOVERY_DIR := $(BASE_DISCOVERY)/SVA
+BASE_DISCOVERY_d	:= $(BASE_d)/outputs/result
+HERVK_DISCOVERY_d	:= $(BASE_DISCOVERY_d)/HERVK
+LINE1_DISCOVERY_d	:= $(BASE_DISCOVERY_d)/LINE1
+ALU_DISCOVERY_d		:= $(BASE_DISCOVERY_d)/ALU
+SVA_DISCOVERY_d		:= $(BASE_DISCOVERY_d)/SVA
 
 
 # Some commands.
-JAR := $(MELT_PLACE)/MELT.jar
-PREPROCESS := java -Xmx2G -jar $(JAR) Preprocess
-INDIV_ANALYSIS := java -Xmx4G -jar $(JAR) IndivAnalysis
-GROUP_ANALYSIS := java -Xmx6G -jar $(JAR) GroupAnalysis
-GENOTYPE := java -Xmx2G -jar $(JAR) Genotype
-MAKE_VCF := java -Xmx2G -jar $(JAR) MakeVCF
+JAR				:= $(MELT_PLACE)/MELT.jar
+PREPROCESS		:= java -Xmx2G -jar $(JAR) Preprocess
+INDIV_ANALYSIS	:= java -Xmx4G -jar $(JAR) IndivAnalysis
+GROUP_ANALYSIS	:= java -Xmx6G -jar $(JAR) GroupAnalysis
+GENOTYPE		:= java -Xmx2G -jar $(JAR) Genotype
+MAKE_VCF		:= java -Xmx2G -jar $(JAR) MakeVCF
 
 
 # Temporary directories for runtime processing.
-TEMP_PROCESS_DIR := $(OUTPUT_DIR)/temp/
-DUMP_DIR := $(OUTPUT_DIR)/result/dump/
+TEMP_PROCESS_DIR	:= $(OUTPUTS_d)/temp/
+DUMP_DIR			:= $(OUTPUTS_d)/result/dump/
 
 
 
@@ -102,17 +98,21 @@ DUMP_DIR := $(OUTPUT_DIR)/result/dump/
 ############################## EDIT HERE! #####################################
 
 # Reference files and annotations.
-GENOMES_DIR := $(REFERENCE)/genomes
-REF_ANNOTATION := $(ANNOTATION)/gencode.v26.annotation.gtf
-REP_ANNOTATION := $(ANNOTATION)/rep.hg38.converted.bed
-REP_ANNOTATION_manual := $(ANNOTATION)/rep.hg38.converted.manual.bed
-REFERENCE_GENOME_FASTA := $(GENOMES_DIR)/hg38/hg38.fa
-REFERENCE_BED := $(MELT_PLACE)/add_bed_files/Hg38/Hg38.genes.bed
+GENOMES_d				:= $(REFERENCE_d)/genomes
+REP_ANNOTATION			:= $(ANNOTATION_d)/rep.hg38.converted.bed
+REP_ANNOTATION_manual	:= $(ANNOTATION_d)/rep.hg38.converted.manual.bed
+REFERENCE_GTF			:= $(ANNOTATION_d)/gencode.v26.annotation.gtf
+REFERENCE_GENOME		:= $(GENOMES_d)/hg38/hg38.fa
+REFERENCE_BED			:= $(MELT_PLACE)/add_bed_files/Hg38/Hg38.genes.bed
 
 ###############################################################################
 
 
 
 # Some other variables.
-BAM_COVERAGE := 40
-SEARCH_CRIT := $(BASE_DIR)/scripts/search_crit.awk
+BAM_COVERAGE	:= 40
+SEARCH_CRIT		:= $(BASE_d)/scripts/search_crit.awk
+
+# Pay attention here!
+INPUTS			:= /home/scratch60/lbuzzo/MELT/inputs/bams.txt
+OUTPUTS_d		:= /home/scratch60/lbuzzo/MELT/outputs
