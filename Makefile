@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 ############################## HEADER ##########################################
 #
 # Makefile data:
@@ -6,6 +7,7 @@
 # 		File:			Makefile
 # 		Module:			none
 #		Project:		melt
+#		Pipeline: 
 # 		Author:			Jose L. L. Buzzo
 # 		Organization:	RetroTeam
 # 		Year:			2018
@@ -32,14 +34,43 @@
 
 ############################## PREAMBLE ########################################
 
+# Command macros.
+SHELL				:= bash
+MODULE_NAME			:= main
+#CALL				:= [$(MODULE_NAME): $(shell date --utc)]
+ECHO				:= echo -e
+MKDIR				:= mkdir -p
+PING				:= ping -c1
+DOCKER_RUN			:= docker run
+DOCKER_FLAGS		:= --rm -ti
+
+
+
+############################## INFRASTRUCTURE ##################################
+# This section must contain only general infrastructure variables.
+
+
+# NOTE: Varable names can end with '_d', '_f', '_r', '_t' and '_l'.
+# They represent, respectively, directories, files, references, temporaries and
+# lists values inside them.
+# Only names ending with '_l' can have non-single string values, but you can
+# compose'em: OUTPUTS_dlt (for a list of temporary directories). 
+
+
 # Include user's configuration file (only the first one).
-SWITCH			:= $(shell [ -f .ponga_switch ] && echo 1)
-CONFIG_f 		?= $(if $(SWITCH),/home/config/config.mk,config.mk)
-aux 			:= $(word 1, $(abspath $(strip $(wildcard $(CONFIG_f)))))
+SWITCH				:= $(shell [ -f ".ponga_switch" ] && echo "1")
+CONFIG_f 			?= $(if $(SWITCH),/home/config/config.mk,config.mk)
+aux 				:= $(word 1, $(abspath $(strip $(wildcard $(CONFIG_f)))))
 include $(if $(aux), $(aux), $(error Configuration file not found))
 
 
 
+# Infrastructure directories.
+INFRASTRUCTURE_dl	:= $(CONFIG_d) $(INPUTS_d) $(OUTPUTS_d) $(ASSETS_d) $(REFERENCE_d) $(ANNOTATION_d) $(EXTRA_d) $(TMP_d)
+
+
+
+############################## VALIDATIONS #####################################
 
 # Presentation.
 $(info ###############################################################################)
@@ -47,39 +78,28 @@ $(info .                             $(PIPELINE))
 $(info ###############################################################################)
 
 
-# Define a CALL message for the log.
-CALL = [$(PIPELINE): $(shell date "+%Y-%m-%d(%H:%M:%S)")]
-
-
-# ===> VALIDATIONS <===
-
 # Validate INPUTS against emptyness.
-INPUTS_PROCESSED := $(strip $(INPUTS))
+#$(info >>$(MP_INPUTS_l)<<2)
+INPUTS_PROCESSED	:= $(word 1, $(abspath $(strip $(wildcard $(MP_INPUTS_l)))))
 $(if $(INPUTS_PROCESSED),, $(error Variabe INPUTS is empty))
 
 # Search and validate INPUTS from a given string list, directory, or file, by
 # the SUFFIXES list criteria.
 #INPUTS_PROCESSED := $(shell $(SCRIPTS)/ufinder.sh $(INPUTS_PROCESSED) $(SUFFIXES))
 
-$(info >>$(INPUTS_PROCESSED)<<)
 # A limited alternative validation process (without 'ufinder' script).
-INPUTS_PROCESSED := $(if $(shell [ -f $(INPUTS_PROCESSED) ] && echo 1), $(wildcard $(filter %$(SUFFIXES), $(shell cat $(INPUTS_PROCESSED)))), $(wildcard $(INPUTS_PROCESSED)/*$(SUFFIXES)))
-$(info >>$(INPUTS_PROCESSED)<<2)
-INPUTS_PROCESSED := $(abspath $(strip $(INPUTS_PROCESSED)))
+INPUTS_PROCESSED := $(if $(shell [ -f "$(INPUTS_PROCESSED)" ] && echo "1"),$(filter %$(SUFFIXES), $(shell cat $(INPUTS_PROCESSED))),$(wildcard $(INPUTS_PROCESSED)/*$(SUFFIXES)))
+#INPUTS_PROCESSED := $(if $(shell [ -f "$(INPUTS_PROCESSED)" ] && echo "1"),$(info foi),$(info nao foi))
+
+#$(info >>$(INPUTS_PROCESSED)<<2)
+INPUTS_PROCESSED := $(abspath $(strip $(wildcard $(INPUTS_PROCESSED))))
 
 # Verifying 'SUFFIXES' terminated files' remaining after the filtering of the
 # INPUTS_PROCESSED list.
 $(if $(INPUTS_PROCESSED),, $(error No valid $(SUFFIXES) file specified))
 
-# Verifying OUTPUTS_d previous existence.
-ifneq ($(wildcard $(OUTPUTS_d)),)
-$(info )
-$(info $(CALL) Directory '$(OUTPUTS_d)' will be overwritten!)
-endif
 
-
-
-# ===> PREPROCESSING <===
+############################## PREPROCESSING ###################################
 
 # ATTENTION: Variables that are string lists has an '_l' suffix appendedd to
 # the end of their names. Their behavior differently in pattern rules.
@@ -140,50 +160,54 @@ OUTPUTS_ALU_VCF := $(ALU_DISCOVERY_d)/ALU.final_comp.vcf
 OUTPUTS_SVA_VCF := $(SVA_DISCOVERY_d)/SVA.final_comp.vcf
 
 
-
 # Export all variables.
 export
 
 
 
-# ===> DEBUG CODE <===
+############################## DEBUG ###########################################
 
 # Enable some prints, if variable DBG="yes".
 ifeq ($(DBG),yes)
+$(info ###############################################################################)
+$(info PIPELINE:$(PIPELINE).)
+$(info SWITCH:$(SWITCH).)
+$(info INPUTS_PROCESSED:$(INPUTS_PROCESSED).)
+$(info OUTPUTS_d:$(OUTPUTS_d).)
 $(info )
-$(info OUTPUTS_d: >$(OUTPUTS_d).)
+
+$(info INPUTS_l:$(INPUTS_l).)
+$(info INPUTS_FILENAME_l:$(INPUTS_FILENAME_l).)
+$(info INPUTS_BASENAME_l:$(INPUTS_BASENAME_l).)
+$(info INPUTS_d_l:$(INPUTS_dl).)
+$(info INPUTS_BASENAME_dl:$(INPUTS_BASENAME_dl).)
 $(info )
-$(info INPUTS_l: >$(INPUTS_l).)
-$(info INPUTS_FILENAME_l: >$(INPUTS_FILENAME_l).)
-$(info INPUTS_BASENAME_l: >$(INPUTS_BASENAME_l).)
-$(info INPUTS_d_l: >$(INPUTS_dl).)
-$(info INPUTS_BASENAME_dl: >$(INPUTS_BASENAME_dl).)
+
+$(info OUTPUTS_l:$(OUTPUTS_l).)
+$(info OUTPUTS_FILENAME_l:$(OUTPUTS_FILENAME_l).)
+$(info OUTPUTS_BASENAME_l:$(OUTPUTS_BASENAME_l).)
+$(info OUTPUTS_d_l:$(OUTPUTS_dl).)
+$(info OUTPUTS_BASENAME_dl:$(OUTPUTS_BASENAME_dl).)
 $(info )
-$(info OUTPUTS_l: >$(OUTPUTS_l).)
-$(info OUTPUTS_FILENAME_l: >$(OUTPUTS_FILENAME_l).)
-$(info OUTPUTS_BASENAME_l: >$(OUTPUTS_BASENAME_l).)
-$(info OUTPUTS_d_l: >$(OUTPUTS_dl).)
-$(info OUTPUTS_BASENAME_dl: >$(OUTPUTS_BASENAME_dl).)
+
+$(info OUTPUTS_ABNORMAL_l:$(OUTPUTS_ABNORMAL_l).)
+$(info OUTPUTS_HERVK_INDIV_lt:$(OUTPUTS_HERVK_INDIV_lt).)
+$(info OUTPUTS_ALU_GEN_lt:$(OUTPUTS_ALU_GEN_lt).)
 $(info )
-$(info OUTPUTS_ABNORMAL_l: >$(OUTPUTS_ABNORMAL_l).)
-$(info OUTPUTS_HERVK_INDIV_lt: >$(OUTPUTS_HERVK_INDIV_lt).)
-$(info OUTPUTS_ALU_GEN_lt: >$(OUTPUTS_ALU_GEN_lt).)
+
+$(info INFRASTRUCTURE_dl:$(INFRASTRUCTURE_dl).)
 ## The pattern must be extended to all, must be constant, not an array of
 ## different values. See:
-$(info )
-$(info 1>$(patsubst /home/leonel/%$(SUFFIX), %.bam.o, $(INPUTS)).)
-$(info 2>$(patsubst $(OUTPUTS_d)%.abnormal,%.abnormal.o, $(OUTPUTS_ABNORMAL_l)).)
+$(info ###############################################################################)
 $(info )
 endif
 
+
 # Enable debug stop, if variable STP is non-empty.
-ifdef STP
+ifeq ($(STP),yes)
 $(error Emergency stop)
 endif
 
-
-
-############################## LASY EVALUATION VARIABLES ######################
 
 
 ############################## MELT MAIN TARGETS ##############################
@@ -191,7 +215,6 @@ endif
 all: all_vcf
 	$(info )
 	$(info $(CALL) All done!)
-
 
 
 
@@ -472,12 +495,9 @@ $(OUTPUTS_l): %.bam: $$(REQ) | validation $(OUTPUTS_d)
 		samtools sort -O BAM -m 8G -@ 8 $< -o $@; \
 	fi
 
-# Infrastructure directories.
-infrastructure_d: $(CONFIG_d) $(INPUTSS_d) $(OUTPUTSS_d) $(ASSETS_d)
-infrastructure_d: $(REFERENCE_d) $(ANNOTATION_d) $(EXTRA_d) $(TMP_d)
 
 # Projects' complementary infastructure directories.
-$(CONFIG_d) $(INPUTS_d) $(OUTPUTS_d) $(ASSETS_d) $(REFERENCE_d) $(ANNOTATION_d) $(EXTRA_d) $(TMP_d):
+$(INFRASTRUCTURE_dl):
 	$(info )
 	$(info $(CALL) Create directory: $@.)
 	mkdir -p $@
@@ -488,7 +508,7 @@ validation:
 
 # Simple multipurpose test.
 simple_test:
-	echo "It's a simple test for arguments: $(ARGS)."
+	echo "It's a simple test for arguments:$(ARGS)."
 
 
 
@@ -507,14 +527,15 @@ dockerize: Dockerfile
 	$(info Make a docker image.)
 	docker build -t melt:latest .
 
-docker_run: Makefile $(CONFIG_f) | infrastructure_d
+docker_run: Makefile $(CONFIG_f) | $(INFRASTRUCTURE_dl)
 	$(info )
 	$(info Run docker image with MELT command.)
 	cp $(CONFIG_f) $(CONFIG_d)/$(notdir $(CONFIG_f))
-	docker run \
-		--rm \
-		-ti \
+	cp Makefile $(CONFIG_d)/Makefile
+	$(DOCKER_RUN) \
+		$(DOCKER_FLAGS) \
 		-u 1541:1000 \
+		-w $(C_BASE_d) \
 		-v $(H_CONFIG_d):$(C_CONFIG_d) \
 		-v $(H_INPUTS_d):$(C_INPUTS_d) \
 		-v $(H_OUTPUTS_d):$(C_OUTPUTS_d) \

@@ -42,18 +42,6 @@ RUN apt-get update && \
 
 
 
-
-# Create inputs, outputs and assets directories.
-RUN mkdir \
-	/home/config \
-	/home/inputs \
-	/home/outputs \
-	/home/assets \
-	/home/reference \
-	/home/annotation \
-	/home/tmp \
-	/home/extra
-
 ### Copy MELT into it's container directory.
 # Copy from internet.
 #RUN mkdir /home/MELT
@@ -87,9 +75,6 @@ ENV PATH=$SAMTOOLS_PATH:$PATH
 
 # Create the work directory and adentrate it.
 WORKDIR /home
-
-# Add the main script.
-ADD ./Makefile .
 
 # An important switch!
 RUN touch .ponga_switch

@@ -1,20 +1,77 @@
-# Ignore structural folders.
+############################## HEADER ##########################################
+# Repository's ignore list.
+################################################################################
+
+
+
+# Ignore repository's general files.
+#.gitignore
+#.dockerignore
+#Dockerfile
+#README.md
+#LICENSE
+#CONTRIBUTING
+#NEWS
+
+
+# Ignore repository's general folders.
+#scripts/
+#src/
+#lib/
+#include/
+bin/
+#doc/
+#docker/
+#templates/
+#modules/
+#misc/
+packs/
+build/
+t/
+
+
+# Ignore general doc, building, timestamp and log files.
+#*.tex
+#*.md
+#*.ac
+#*.am
+#*.ini
+#*.conf
+#*.tt
+*.[oa]
+*.yml
+*.log
+*.swp
+*~
+*.tar.gz
+timestamp*
+
+
+# Ignore code files. (Don't do that!)
+#*.mk
+#*.c
+#*.h
+#*.pl
+#*.py
+#*.R
+
+
+# Don't ignore general defaults configuration file.
+!defaults.yml
+
+
+# Ignore runtime structural folders.
+pocket/
 config/
 inputs/
 outputs/
 assets/
 reference/
 annotation/
+extra/
 tmp/
 
-# Ignore other minor folders.
-packs/
+
+# Ignore repository's specific folders.
 MELTv2.1.4/
 bowtie2-2.3.4.1/
-
-# Ignore some files.
-*.log
-*.swp
-*.yml
-
-timestamp*
