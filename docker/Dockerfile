@@ -1,82 +1,43 @@
 ###############################################################################
 #
 # Dockerfile to make a java container for MELT.
+# Image: MELT2docker
 #
 ###############################################################################
 
 
 
-# Import base image.
-FROM openjdk:8-jdk-slim
+# Import base image: Debian:strech-slim with openjdk.
+FROM galantelab/biotools
 
 # Some metadata
 MAINTAINER Jose Leonel L. Buzzo
 
 
 
-
-WORKDIR /
-
-# All installations
-RUN apt-get update && \
-	apt-get install -y \
-		wget \
-		gcc \
-		g++ \
-		make \
-		parallel \
-		autoconf \
-		automake \
-		libtool \
-		libtbb-dev \
-		libncurses5-dev \
-		libbz2-dev \
-		liblzma-dev \
-		zlib1g-dev \
-		pigz \
-		tar \
-		unzip \
-		bzip2 \
-		gzip && \
-	apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# System wide installations: apt-get.
+RUN apt-get -y update && apt-get -y upgrade
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 
 
-### Copy MELT into it's container directory.
-# Copy from internet.
-#RUN mkdir /home/MELT
-#RUN wget URL-MELT -o /home
-#RUN tar xzvf MELTv2.1.4.tar.gz -o /home/MELT
+# Begin installations.
+WORKDIR /build
 
-# Offline copy.
-COPY ./MELTv2.1.4 /home/MELTv2.1.4
+#> melt
+COPY ./deps/MELTv2.1.4 MELTv2.1.4
+#-
 
+#> bowtie2
+COPY ./deps/bowtie2-2.3.4.1 bowtie2-2.3.4.1
+RUN cd bowtie2-2.3.4.1 && make
+RUN echo "export PATH=/build/bowtie2-2.3.4.1:$PATH" >> /home/lion/.bashrc
+ENV PATH=/build/bowtie2-2.3.4.1:$PATH
+#-
 
-### Copy Bowtie2 into it's directory and compile it.
-# Copy from internet.
-#RUN mkdir /home/bowtie2
-#RUN wget https://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.3.4.1/bowtie2-2.3.4.1-source.zip -o /home
-#RUN unzip bowtie2-2.3.4.1-source.zip -o /home/MELT
-
-# Offline copy.
-COPY ./bowtie2-2.3.4.1 /home/bowtie2-2.3.4.1
-RUN make -f /home/bowtie2-2.3.4.1/Makefile -C /home/bowtie2-2.3.4.1
-RUN echo "export PATH=/home/bowtie2-2.3.4.1:$PATH" > /home/.bashrc
-ENV PATH=/home/bowtie2-2.3.4.1:$PATH
+# Finish installations.
+WORKDIR /home/lion
 
 
-# Install Samtools from internet.
-ENV SAMTOOLS_URL=https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2 \
-	SAMTOOLS_PATH=/samtools-1.7
-RUN wget $SAMTOOLS_URL && tar xjf samtools-1.7.tar.bz2 && (cd $SAMTOOLS_PATH && make)
-ENV PATH=$SAMTOOLS_PATH:$PATH
-
-
-
-# Create the work directory and adentrate it.
-WORKDIR /home
-
-# An important switch!
-RUN touch .ponga_switch
 
 CMD ["bash"]

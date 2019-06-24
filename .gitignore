@@ -22,11 +22,14 @@
 bin/
 #doc/
 #docker/
+#cloud/
 #templates/
 #modules/
 #misc/
+deps/
 packs/
 build/
+test/
 t/
 
 
@@ -58,10 +61,11 @@ timestamp*
 
 # Don't ignore general defaults configuration file.
 !defaults.yml
+!config.yml
+!aws.yml
 
 
 # Ignore runtime structural folders.
-pocket/
 config/
 inputs/
 outputs/
@@ -73,5 +77,8 @@ tmp/
 
 
 # Ignore repository's specific folders.
+pocket/
+capsule/
 MELTv2.1.4/
 bowtie2-2.3.4.1/
+list.txt

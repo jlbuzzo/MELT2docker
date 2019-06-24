@@ -7,7 +7,6 @@ reference/
 annotation/
 tmp/
 
-packs/
 
 # Ignore some files.
 .git

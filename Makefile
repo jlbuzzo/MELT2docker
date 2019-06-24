@@ -56,10 +56,20 @@ DOCKER_FLAGS		:= --rm -ti
 # Only names ending with '_l' can have non-single string values, but you can
 # compose'em: OUTPUTS_dlt (for a list of temporary directories). 
 
+# Running mode.
+DOCKERIZE			:= no
+CLOUDRIZE			:= no
+
+# Environment determination (container or host).
+SWITCH_HAS			:= [ -f ".ponga_switch" ] && echo "1"
+SWITCH				:= $(if $(shell $(SWITCH_HAS)),1,)
+
 
 # Include user's configuration file (only the first one).
-SWITCH				:= $(shell [ -f ".ponga_switch" ] && echo "1")
-CONFIG_f 			?= $(if $(SWITCH),/home/config/config.mk,config.mk)
+CONFIG_HAS			:= [ -f "config.mk" ] && echo "1"
+CONFIG				:= $(if $(shell $(CONFIG_HAS)),config.mk,)
+
+CONFIG_f 			?= $(if $(SWITCH),/home/config/config.mk,./config.mk)
 aux 				:= $(word 1, $(abspath $(strip $(wildcard $(CONFIG_f)))))
 include $(if $(aux), $(aux), $(error Configuration file not found))
 
@@ -73,9 +83,9 @@ INFRASTRUCTURE_dl	:= $(CONFIG_d) $(INPUTS_d) $(OUTPUTS_d) $(ASSETS_d) $(REFERENC
 ############################## VALIDATIONS #####################################
 
 # Presentation.
-$(info ###############################################################################)
-$(info .                             $(PIPELINE))
-$(info ###############################################################################)
+$(info ********************************************************************************)
+$(info .                               $(PIPELINE))
+$(info ********************************************************************************)
 
 
 # Validate INPUTS against emptyness.
@@ -104,60 +114,60 @@ $(if $(INPUTS_PROCESSED),, $(error No valid $(SUFFIXES) file specified))
 # ATTENTION: Variables that are string lists has an '_l' suffix appendedd to
 # the end of their names. Their behavior differently in pattern rules.
 
-OUTPUTS_d := $(abspath $(strip $(OUTPUTS_d)))# This is not a string list!
+OUTPUTS_d				:= $(abspath $(strip $(OUTPUTS_d)))# This is not a string list!
 
 # Folder for timestamps.
-TMSTP_d := $(OUTPUTS_d)/tmstp
+TMSTP_d					:= $(OUTPUTS_d)/tmstp
 
 
 # Carrefully set the INPUTS_l variable after success validations.
-INPUTS_l := $(INPUTS_PROCESSED)
-INPUTS_FILENAME_l := $(strip $(notdir $(INPUTS_l)))
-INPUTS_BASENAME_l := $(strip $(basename $(notdir $(INPUTS_l))))
-INPUTS_dl := $(strip $(dir $(INPUTS_l)))
-#INPUTS_BASENAME_dl :=
+INPUTS_l				:= $(INPUTS_PROCESSED)
+INPUTS_FILENAME_l		:= $(strip $(notdir $(INPUTS_l)))
+INPUTS_BASENAME_l		:= $(strip $(basename $(notdir $(INPUTS_l))))
+INPUTS_dl				:= $(strip $(dir $(INPUTS_l)))
+#INPUTS_BASENAME_dl		:=
 
 
-#OUTPUTS_l :=
-#OUTPUTS_FILENAME_l :=
-#OUTPUTS_BASENAME_l :=
-#OUTPUTS_dl :=
-OUTPUTS_BASENAME_dl := $(addprefix $(OUTPUTS_d)/, $(INPUTS_BASENAME_l))
-OUTPUTS_l := $(strip $(join $(OUTPUTS_BASENAME_dl), $(addprefix /, $(INPUTS_FILENAME_l))))
-
+#OUTPUTS_l				:=
+#OUTPUTS_FILENAME_l		:=
+#OUTPUTS_BASENAME_l		:=
+#OUTPUTS_dl				:=
+OUTPUTS_BASENAME_dl		:= $(addprefix $(OUTPUTS_d)/, $(INPUTS_BASENAME_l))
+OUTPUTS_l				:= $(strip $(join $(OUTPUTS_BASENAME_dl), $(addprefix /, $(INPUTS_FILENAME_l))))
+#OUTPUTS_l				:= $(OUTPUTS_l:.bam=.sorted.bam)
 
 
 # Derivated lists: '.bai', '.abnormal', '.disc', '.disc.bai' and others.
-OUTPUTS_BAI_l := $(addsuffix .bai, $(OUTPUTS_l))
-OUTPUTS_ABNORMAL_l := $(addsuffix .abnormal, $(OUTPUTS_l))
-OUTPUTS_DISC_l := $(addsuffix .disc, $(OUTPUTS_l))
-OUTPUTS_DISC_BAI_l := $(addsuffix .disc.bai, $(OUTPUTS_l))
-OUTPUTS_DISC_FQ_l:= $(addsuffix .disc.fq, $(OUTPUTS_l))
+OUTPUTS_BAI_l			:= $(addsuffix .bai, $(OUTPUTS_l))
+OUTPUTS_ABNORMAL_l		:= $(addsuffix .abnormal, $(OUTPUTS_l))
+OUTPUTS_DISC_l			:= $(addsuffix .disc, $(OUTPUTS_l))
+OUTPUTS_DISC_BAI_l		:= $(addsuffix .disc.bai, $(OUTPUTS_l))
+OUTPUTS_DISC_FQ_l		:= $(addsuffix .disc.fq, $(OUTPUTS_l))
 
 # Timestamp lists, terminated in '_lt'.
 # Lists for individual analysis.
-OUTPUTS_HERVK_INDIV_lt := $(addsuffix .hervk.indiv.tmstp, $(OUTPUTS_l))
-OUTPUTS_LINE1_INDIV_lt := $(addsuffix .line1.indiv.tmstp, $(OUTPUTS_l))
-OUTPUTS_ALU_INDIV_lt := $(addsuffix .alu.indiv.tmstp, $(OUTPUTS_l))
-OUTPUTS_SVA_INDIV_lt := $(addsuffix .sva.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_HERVK_INDIV_lt	:= $(addsuffix .hervk.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_LINE1_INDIV_lt	:= $(addsuffix .line1.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_ALU_INDIV_lt	:= $(addsuffix .alu.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_SVA_INDIV_lt	:= $(addsuffix .sva.indiv.tmstp, $(OUTPUTS_l))
 
 # Simple timestamps files for group analysis.
-OUTPUTS_HERVK_GRP_t := $(TMSTP_d)/common.bam.hervk.group.tmstp
-OUTPUTS_LINE1_GRP_t := $(TMSTP_d)/common.bam.line1.group.tmstp
-OUTPUTS_ALU_GRP_t := $(TMSTP_d)/common.bam.alu.group.tmstp
-OUTPUTS_SVA_GRP_t := $(TMSTP_d)/common.bam.sva.group.tmstp
+OUTPUTS_HERVK_GRP_t		:= $(TMSTP_d)/common.bam.hervk.group.tmstp
+OUTPUTS_LINE1_GRP_t		:= $(TMSTP_d)/common.bam.line1.group.tmstp
+OUTPUTS_ALU_GRP_t		:= $(TMSTP_d)/common.bam.alu.group.tmstp
+OUTPUTS_SVA_GRP_t		:= $(TMSTP_d)/common.bam.sva.group.tmstp
 
 # Lists for genotype analysis.
-OUTPUTS_HERVK_GEN_lt := $(addsuffix .hervk.gen.tmstp, $(OUTPUTS_l))
-OUTPUTS_LINE1_GEN_lt := $(addsuffix .line1.gen.tmstp, $(OUTPUTS_l))
-OUTPUTS_ALU_GEN_lt := $(addsuffix .alu.gen.tmstp, $(OUTPUTS_l))
-OUTPUTS_SVA_GEN_lt := $(addsuffix .sva.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_HERVK_GEN_lt	:= $(addsuffix .hervk.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_LINE1_GEN_lt	:= $(addsuffix .line1.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_ALU_GEN_lt		:= $(addsuffix .alu.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_SVA_GEN_lt		:= $(addsuffix .sva.gen.tmstp, $(OUTPUTS_l))
 
 # Simple VCF files.
-OUTPUTS_HERVK_VCF := $(HERVK_DISCOVERY_d)/HERVK.final_comp.vcf
-OUTPUTS_LINE1_VCF := $(LINE1_DISCOVERY_d)/LINE1.final_comp.vcf
-OUTPUTS_ALU_VCF := $(ALU_DISCOVERY_d)/ALU.final_comp.vcf
-OUTPUTS_SVA_VCF := $(SVA_DISCOVERY_d)/SVA.final_comp.vcf
+OUTPUTS_HERVK_VCF		:= $(HERVK_DISCOVERY_d)/HERVK.final_comp.vcf
+OUTPUTS_LINE1_VCF		:= $(LINE1_DISCOVERY_d)/LINE1.final_comp.vcf
+OUTPUTS_ALU_VCF			:= $(ALU_DISCOVERY_d)/ALU.final_comp.vcf
+OUTPUTS_SVA_VCF			:= $(SVA_DISCOVERY_d)/SVA.final_comp.vcf
 
 
 # Export all variables.
@@ -169,36 +179,46 @@ export
 
 # Enable some prints, if variable DBG="yes".
 ifeq ($(DBG),yes)
-$(info ###############################################################################)
+$(info )
+$(info ****************************** DEBUG *******************************************)
+$(info General information.)
 $(info PIPELINE:$(PIPELINE).)
 $(info SWITCH:$(SWITCH).)
+$(info INPUT:$(INPUT).)
 $(info INPUTS_PROCESSED:$(INPUTS_PROCESSED).)
+$(info OUTPUT_DIR:$(OUTPUT_DIR).)
 $(info OUTPUTS_d:$(OUTPUTS_d).)
 $(info )
 
+$(info Infrastructure.)
+$(info DOCKERIZE:$(DOCKERIZE).)
+$(info IMAGE:$(IMAGE).)
+$(info ENCAPSULATE:$(ENCAPSULATE).)
+$(info CAPSULE:$(POCKET).)
+$(info INFRASTRUCTURE_dl:$(INFRASTRUCTURE_dl).)
+$(info )
+
+$(info Input files and locals.)
 $(info INPUTS_l:$(INPUTS_l).)
 $(info INPUTS_FILENAME_l:$(INPUTS_FILENAME_l).)
 $(info INPUTS_BASENAME_l:$(INPUTS_BASENAME_l).)
-$(info INPUTS_d_l:$(INPUTS_dl).)
+$(info INPUTS_dl:$(INPUTS_dl).)
 $(info INPUTS_BASENAME_dl:$(INPUTS_BASENAME_dl).)
 $(info )
 
+$(info Output files and locals.)
 $(info OUTPUTS_l:$(OUTPUTS_l).)
 $(info OUTPUTS_FILENAME_l:$(OUTPUTS_FILENAME_l).)
 $(info OUTPUTS_BASENAME_l:$(OUTPUTS_BASENAME_l).)
-$(info OUTPUTS_d_l:$(OUTPUTS_dl).)
+$(info OUTPUTS_dl:$(OUTPUTS_dl).)
 $(info OUTPUTS_BASENAME_dl:$(OUTPUTS_BASENAME_dl).)
 $(info )
 
+$(info OUTPUTS_BAI_l:$(OUTPUTS_BAI_l).)
 $(info OUTPUTS_ABNORMAL_l:$(OUTPUTS_ABNORMAL_l).)
 $(info OUTPUTS_HERVK_INDIV_lt:$(OUTPUTS_HERVK_INDIV_lt).)
 $(info OUTPUTS_ALU_GEN_lt:$(OUTPUTS_ALU_GEN_lt).)
-$(info )
-
-$(info INFRASTRUCTURE_dl:$(INFRASTRUCTURE_dl).)
-## The pattern must be extended to all, must be constant, not an array of
-## different values. See:
-$(info ###############################################################################)
+$(info ********************************************************************************)
 $(info )
 endif
 
@@ -449,7 +469,7 @@ $(OUTPUTS_SVA_INDIV_lt): %.bam.sva.indiv.tmstp: %.bam %.bam.disc
 preprocess: $(OUTPUTS_DISC_l)
 
 # Preprocessing BAMs.
-$(OUTPUTS_DISC_l): %.bam.disc: %.bam %.bam.bai
+$(OUTPUTS_DISC_l): %.bam.disc: %.bam %.bam.bai $(REFERENCE_GENOME)
 	$(info )
 	$(info $(CALL) Preprocessing file $<.)
 	$(PREPROCESS) -bamfile $< -h $(REFERENCE_GENOME)
@@ -469,7 +489,7 @@ $(HERVK_d) $(LINE1_d) $(ALU_d) $(SVA_d) $(TMSTP_d):
 REQ = $(filter %$(*F)$(SUFFIXES), $(INPUTS_l))
 
 # Token target:
-common: $(OUTPUTS_BAI_l) 
+index: $(OUTPUTS_BAI_l) 
 
 # Make .bai files list.
 $(OUTPUTS_BAI_l): %.bam.bai: %.bam
@@ -481,18 +501,21 @@ $(OUTPUTS_BAI_l): %.bam.bai: %.bam
 		samtools index -b -@ 8 $< $@; \
 	fi
 
+
+sort: $(OUTPUTS_l)
+
 # Make .bam files list.
 .SECONDEXPANSION:
 $(OUTPUTS_l): %.bam: $$(REQ) | validation $(OUTPUTS_d)
 	$(info )
-	$(info $(CALL) Creating link for input file: $(REQ).)
+	$(info $(CALL) Creating link for input file: $(REQ) -- $^.)
 	mkdir -p $(*D)
 	if [ "$$(samtools view -H $< 2> /dev/null | head -n1 | cut -f3)" = "SO:coordinate" ]; then \
 		ln -sf "$$(readlink -f $<)" $@; \
 	elif [ -s "$$(find $$(dirname $$(readlink -f $<)) -type f -name '*$(*F)*.sorted.bam')" ]; then \
 		ln -sf "$$(find $$(dirname $$(readlink -f $<)) -type f -name '*$(*F)*.sorted.bam')" $@; \
 	else \
-		samtools sort -O BAM -m 8G -@ 8 $< -o $@; \
+		samtools sort -O BAM -m 4G -@ 8 $< -o $@; \
 	fi
 
 
@@ -514,9 +537,6 @@ simple_test:
 
 ############################## EXTRA TARGETS ###################################
 
-
-
-
 # Search for docker.
 docker_have: Dockerfile
 	# Search for docker image.
@@ -525,7 +545,7 @@ docker_have: Dockerfile
 dockerize: Dockerfile
 	$(info )
 	$(info Make a docker image.)
-	docker build -t melt:latest .
+	docker build -f docker/Dockerfile -t melt:latest
 
 docker_run: Makefile $(CONFIG_f) | $(INFRASTRUCTURE_dl)
 	$(info )

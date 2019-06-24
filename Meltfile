@@ -1,0 +1,1140 @@
+#!/usr/bin/env make
+############################## HEADER ##########################################
+#
+# Makefile for sandy stuff...
+#
+################################################################################
+
+
+
+
+
+# Default system path at runtime: prefix.
+PFX						:= $(if $(prefix),$(abspath $(strip $(wildcard $(prefix)))),)
+override prefix			:= $(if $(prefix),$(if $(PFX),$(PFX),ERROR),$(CURDIR))
+
+ifeq ($(prefix),ERROR)
+$(error "Invalid value for prefix variable")
+endif
+
+
+# Environment determination (container or host).
+SWITCH_HAS				:= [ -f "/.dockerenv" ] && echo "1"
+SWITCH					:= $(if $(shell $(SWITCH_HAS)),1,)
+
+
+
+############################## APP SPECIFICS ###################################
+
+# App specific runtime data: constants.
+H_ROOT_DIR				:= /home/users/jlbuzzo/projects_old/MELT2docker
+C_ROOT_DIR				:= /build
+ROOT_DIR				:= $(if $(SWITCH),$(C_ROOT_DIR),$(H_ROOT_DIR))
+RUNNING_DIR				:= $(CURDIR)
+
+APP						:= MELT2docker
+VERSION					:= 0.1
+ID						:= npp_123456
+KEY						:= $(ROOT_DIR)/keys/key.pub
+LICENSE					:= $(ROOT_DIR)/LICENSE
+MANUAL					:= $(ROOT_DIR)/doc/neopipe.pod
+SITE					:= https://galantelab.github.io/neopipe
+REPO					:= https://github.com/galantelab/neopipe
+CLOUD					:= https://www.aws.com/galantelab/neopipe
+
+CONFIGFILE				:=
+ENCAPSULATE				:=
+CLOUDERIZE				:=
+CLOUDFILE				:= $(RUNNING_DIR)/aws.yml
+DOCKERIZE				:=
+DOCKERFILE				:= $(RUNNING_DIR)/docker/Dockerfile
+IMAGE					:= galantelab/MELT2docker
+MAKERIZE				:=
+MAKEFILE				:= $(RUNNING_DIR)/Makefile
+TARBALL					:= $(RUNNING_DIR)/$(APP)-master.tar.gz
+
+
+# Main command.
+CMD						:=
+
+
+# List of important files. Mount them in their respective folders.
+# Must use only absolute paths!
+MP_CONFIG_l				:=
+MP_INPUTS_l				:=
+MP_OUTPUTS_l			:=
+MP_ASSETS_l				:=
+MP_REFERENCE_l			:=
+MP_ANNOTATION_l			:=
+MP_EXTRA_l				:=
+MP_TMP_l				:=
+
+
+# Some important input files.
+MELT_PLACE				:= $(ROOT_DIR)/deps/MELTv2.1.4
+MEI_PLACE				:= $(MELT_PLACE)/me_refs/Hg38
+HERVK_ZIP				:= $(MEI_PLACE)/HERVK_MELT.zip
+LINE1_ZIP				:= $(MEI_PLACE)/LINE1_MELT.zip
+ALU_ZIP					:= $(MEI_PLACE)/ALU_MELT.zip
+SVA_ZIP					:= $(MEI_PLACE)/SVA_MELT.zip
+
+# Some commands.
+JAR						:= $(MELT_PLACE)/MELT.jar
+PREPROCESS				:= java -Xmx2G -jar $(JAR) Preprocess
+INDIV_ANALYSIS			:= java -Xmx4G -jar $(JAR) IndivAnalysis
+GROUP_ANALYSIS			:= java -Xmx6G -jar $(JAR) GroupAnalysis
+GENOTYPE				:= java -Xmx2G -jar $(JAR) Genotype
+MAKE_VCF				:= java -Xmx2G -jar $(JAR) MakeVCF
+CALU					:= java -Xmx2G -jar $(JAR) CALU
+LINEU					:= java -Xmx2G -jar $(JAR) LINEU
+
+# Dicovery directories for each result.
+BASE_DISCOVERY_d		:= $(OUTPUTS_d)/results
+HERVK_DISCOVERY_d		:= $(BASE_DISCOVERY_d)/HERVK
+LINE1_DISCOVERY_d		:= $(BASE_DISCOVERY_d)/LINE1
+ALU_DISCOVERY_d			:= $(BASE_DISCOVERY_d)/ALU
+SVA_DISCOVERY_d			:= $(BASE_DISCOVERY_d)/SVA
+
+
+
+############################## MISCELLANEOUS ###################################
+# This section must contain some common variables, like reference genomes and
+# annotations files.
+
+
+# Reference files and annotations.
+REFERENCE_GENOME		:= $(MP_REFERENCE_l)
+REFERENCE_GTF			:= $(MP_ANNOTATION_l)
+REFERENCE_BED			:= $(MELT_PLACE)/add_bed_files/Hg38/Hg38.genes.bed
+REP_ANNOTATION			:= $(ANNOTATION_d)/rep.hg38.converted.bed
+REP_ANNOTATION_manual	:= $(ANNOTATION_d)/rep.hg38.converted.manual.bed
+
+BAM_COVERAGE			:= 40
+
+
+
+############################## OVERRIDE CONFIGURATIONS #########################
+
+# Default configuration file.
+DFT_CONFIG				:= $(abspath $(strip $(wildcard $(RUNNING_DIR)/config.mk)))
+
+# User defined configuration file.
+CFG						:= $(if $(CONFIGFILE),$(abspath $(strip $(wildcard $(CONFIGFILE)))),)
+CONFIG_f				:= $(if $(CONFIGFILE),$(if $(CFG),$(CFG),ERROR),$(DFT_CONFIG))
+
+# Launch an error if a nonexistent configuration file was defined by the user.
+ifeq ($(CONFIG_f),ERROR)
+$(error Configuration file \"$(CONFIGFILE)\" doesn\'t exist)
+endif
+
+# Include configuration file, if exists.
+ifeq ($(CONFIG_f),)
+$(warning Warning: No configuration file specified. Using defaults.)
+else
+include $(CONFIG_f)
+endif
+
+
+
+############################## PREAMBLE ########################################
+# General module info and macros.
+
+# --- Common command macros.
+USER					:= $(shell whoami)
+DATE					:= $(shell date --utc)
+SHELL					:= bash
+ECHO					:= echo -e
+MKDIR					:= mkdir -p
+PING					:= ping -c1
+RM						:= rm -rf
+CC						:= gcc
+CFLAGS					:=
+
+
+# --- Common color macros.
+GREEN					:= "\033[0;32m"
+YELLOW					:= "\033[0;33m"
+RED						:= "\033[0;31m"
+WINE					:= "\033[0;35m"
+RESET					:= "\033[0;m"
+
+# Autotools default paths here.
+
+
+
+############################## INFRASTRUCTURE ##################################
+# This section must contain only general infrastructure variables.
+
+
+# NOTE: Varable names can end with '_d', '_f', '_r', '_t' and '_l'.
+# They represent, respectively, directories, files, references, temporaries and
+# lists values inside them.
+# Only names ending with '_l' can have non-single string values, but you can
+# compose'em: OUTPUTS_dlt (for a list of temporary directories). 
+
+
+# There could be an user for the container (ex. lion).
+DEFAULT_USER			:= lion
+
+
+# Host's base directory, outside the container: $(prefix).
+H_BASE_d				:= $(prefix)
+H_CONFIG_d				:= $(H_BASE_d)/config
+H_INPUTS_d				:= $(H_BASE_d)/inputs
+H_OUTPUTS_d				:= $(H_BASE_d)/outputs
+H_ASSETS_d				:= $(H_BASE_d)/assets
+H_REFERENCE_d			:= $(H_BASE_d)/reference
+H_ANNOTATION_d			:= $(H_BASE_d)/annotation
+H_EXTRA_d				:= $(H_BASE_d)/extra
+H_TMP_d					:= $(H_BASE_d)/tmp
+
+
+# Container's base directory: /home.
+C_BASE_d				:= /home/$(DEFAULT_USER)
+C_CONFIG_d				:= $(C_BASE_d)/config
+C_INPUTS_d				:= $(C_BASE_d)/inputs
+C_OUTPUTS_d				:= $(C_BASE_d)/outputs
+C_ASSETS_d				:= $(C_BASE_d)/assets
+C_REFERENCE_d			:= $(C_BASE_d)/reference
+C_ANNOTATION_d			:= $(C_BASE_d)/annotation
+C_EXTRA_d				:= $(C_BASE_d)/extra
+C_TMP_d					:= $(C_BASE_d)/tmp
+
+
+
+############################## CONDITIONALS ####################################
+
+
+# A common internal representation for paths, based on ENCAPSULATE.
+ifeq ($(ENCAPSULATE),yes)
+BASE_d					:= $(if $(SWITCH),$(C_BASE_d),$(H_BASE_d))
+CONFIG_d				:= $(if $(SWITCH),$(C_CONFIG_d),$(H_CONFIG_d))
+INPUTS_d				:= $(if $(SWITCH),$(C_INPUTS_d),$(H_INPUTS_d))
+OUTPUTS_d				:= $(if $(SWITCH),$(C_OUTPUTS_d),$(H_OUTPUTS_d))
+ASSETS_d				:= $(if $(SWITCH),$(C_ASSETS_d),$(H_ASSETS_d))
+REFERENCE_d				:= $(if $(SWITCH),$(C_REFERENCE_d),$(H_REFERENCE_d))
+ANNOTATION_d			:= $(if $(SWITCH),$(C_ANNOTATION_d),$(H_ANNOTATION_d))
+EXTRA_d					:= $(if $(SWITCH),$(C_EXTRA_d),$(H_EXTRA_d))
+TMP_d					:= $(if $(SWITCH),$(C_TMP_d),$(H_TMP_d))
+
+INFRASTRUCTURE_dl		:= $(CONFIG_d) $(INPUTS_d) $(OUTPUTS_d) $(ASSETS_d)
+INFRASTRUCTURE_dl		+= $(REFERENCE_d) $(ANNOTATION_d) $(EXTRA_d) $(TMP_d)
+INFRASTRUCTURE_sl		:= CONFIG_d INPUTS_d OUTPUTS_d ASSETS_d
+INFRASTRUCTURE_sl		+= REFERENCE_d ANNOTATION_d EXTRA_d TMP_d
+MAPPINGS_fl				:= $(MP_CONFIG_l) $(MP_INPUTS_l) $(MP_OUTPUTS_l) $(MP_ASSETS_l)
+MAPPINGS_fl				+= $(MP_REFERENCE_l) $(MP_ANNOTATION_l) $(MP_EXTRA_l) $(MP_TMP_l)
+MAPPINGS_sl				:= MP_CONFIG_l MP_INPUTS_l MP_OUTPUTS_l MP_ASSETS_l
+MAPPINGS_sl				+= MP_REFERENCE_l MP_ANNOTATION_l MP_EXTRA_l MP_TMP_l
+else
+BASE_d					:= $(if $(SWITCH),$(C_BASE_d),$(H_BASE_d))
+CONFIG_d				:= $(BASE_d)
+INPUTS_d				:= $(BASE_d)
+OUTPUTS_d				:= $(BASE_d)
+ASSETS_d				:= $(BASE_d)
+REFERENCE_d				:= $(BASE_d)
+ANNOTATION_d			:= $(BASE_d)
+EXTRA_d					:= $(BASE_d)
+TMP_d					:= $(BASE_d)
+
+INFRASTRUCTURE_dl		:= $(BASE_d)
+INFRASTRUCTURE_sl		:= BASE_d
+MAPPINGS_fl				:= $(MP_CONFIG_l) $(MP_INPUTS_l) $(MP_OUTPUTS_l) $(MP_ASSETS_l)
+MAPPINGS_fl				+= $(MP_REFERENCE_l) $(MP_ANNOTATION_l) $(MP_EXTRA_l) $(MP_TMP_l)
+MAPPINGS_sl				:= MP_CONFIG_l MP_INPUTS_l MP_OUTPUTS_l MP_ASSETS_l
+MAPPINGS_sl				+= MP_REFERENCE_l MP_ANNOTATION_l MP_EXTRA_l MP_TMP_l
+endif
+
+
+
+# --- Support programs data.
+
+# Upipe management info (works only on Linux).
+UPIPE_SITE				:= https://galantelab.github.io/upipe/
+UPIPE_REPO				:= https://github.com/jlbuzzo/upipe.git
+UPIPE_TARBALL			:= https://github.com/jlbuzzo/upipe/archive/master.tar.gz
+UPIPE_BUILD				:= $(build)/upipe-$(basename $(basename $(notdir $(UPIPE_TARBALL))))
+UPIPE_PATH				:= ~/bin
+UPIPE_IMAGE				:= galantelab/upipe:latest
+
+# Git management info (works only on linux).
+GIT_SITE				:= https://git-scm.com/
+GIT_REPO				:= https://github.com/git/git.git
+GIT_TARBALL				:= https://github.com/git/git/archive/master.tar.gz
+GIT_TARBALL2			:= https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.20.1.tar.gz
+GIT_BUILD				:= $(build)/git-$(basename $(basename $(notdir $(GIT_TARBALL))))
+GIT_BUILD2				:= $(build)/$(basename $(basename $(notdir $(GIT_TARBALL2))))
+GIT_PATH				:= /usr/bin
+GIT_IMAGE				:=
+GIT_CLONE				:= git clone
+
+# Docker management info (works only on Linux).
+DOCKER_SITE				:= https://www.docker.com/
+DOCKER_REPO				:= https://github.com/docker/docker.git
+DOCKER_URL				:= https://github.com/docker/docker/archive/master.tar.gz
+DOCKER_URL2				:= https://download.docker.com/linux/static/stable/x86_64/docker-18.09.1.tgz
+DOCKER_TARBALL			:= $(build)/$(notdir $(DOCKER_URL))
+DOCKER_TARBALL2			:= $(build)/$(notdir $(DOCKER_URL2))
+DOCKER_BUILD			:= $(build)
+DOCKER_PATH				:= /usr/bin
+
+
+# --- General system tests.
+INTERNET_HAS			:= read <<< "$$($(PING) www.google.com 2> /dev/null)" && echo -n $$REPLY
+INTERNET_GET			:= $(if $(shell $(INTERNET_HAS)),,internet_configure)
+
+CAPSULE_HAS				:= [ "$(ENCAPSULATE)" == "yes" ] && echo "1"
+CAPSULE_GET				:= $(if $(shell $(CAPSULE_HAS)),capsule_mount,)
+
+MAKE_HAS				:= [ -n "$$(which make)" ] && echo "1"
+MAKE_GET				:= $(if $(shell $(MAKE_HAS)),,make_install)
+
+GIT_HAS					:= [ -n "$$(which git)" ] && echo "1"
+GIT_GET					:= $(if $(shell $(GIT_HAS)),,git_install)
+
+DOCKER_HAS				:= [ -n "$$(which docker)" ] && echo "1"
+DOCKER_GET				:= $(if $(shell $(DOCKER_HAS)),,docker_install)
+
+PERL_HAS				:= [ -n "$$(which perl)" ] && echo "1"
+PERL_GET				:= $(if $(shell $(PERL_HAS)),,perl_install)
+
+CPAN_HAS				:= [ -n "$$(which cpan)" ] && echo "1"
+CPAN_GET				:= $(if $(shell $(CPAN_HAS)),,cpan_install)
+
+CPANM_HAS				:= [ -n "$$(which cpanm)" ] && echo "1"
+CPANM_GET				:= $(if $(shell $(CPANM_HAS)),,cpanm_install)
+
+PERLBREW_HAS			:= [ -n "$$(which perlbrew)" ] && echo "1"
+PERLBREW_GET			:= $(if $(shell $(PERLBREW_HAS)),,perlbrew_install)
+
+CONDA_HAS				:= [ -n "$$(which conda)" ] && echo "1"
+CONDA_GET				:= $(if $(shell $(CONDA_HAS)),,conda_install)
+
+UPIPE_HAS				:= [ -f "$(UPIPEFILE)" ] && echo "1"
+UPIPE_GET				:= $(if $(shell $(UPIPE_HAS)),,upipe_install)
+
+CLOUD_HAS				:= [ -n "$$(which aws)" ] && echo "1"
+CLOUD_GET				:= $(if $(shell $(CLOUD_HAS)),,aws_install)
+
+
+# Specific tests.
+USE_MODE				:= $(if $(DOCKERIZE),app_docker_run,app_native_run)
+
+DOCKERFILE_HAS			:= [ -f "$(DOCKERFILE)" ] && echo "1"
+DOCKERFILE_GET			:= $(if $(shell $(DOCKERFILE_HAS)),,dockerfile_get)
+
+IMAGE_GET_MODE			:= $(if $(shell $(DOCKERFILE_HAS)),image_build,image_pull)
+
+IMAGE_HAS				:= echo -n "$$(sed -n '\|^$(IMAGE) |{p}' <<< "$$(docker images 2> /dev/null)")" | grep -w 'latest'
+IMAGE_GET				:= $(if $(shell $(IMAGE_HAS)),,$(IMAGE_GET_MODE))
+
+TARBALL_HAS				:= [ -f "$(TARBALL)" ] && echo "1"
+TARBALL_GET				:= $(if $(shell $(TARBALL_HAS)),,repo)
+
+APP_HAS					:= [ -n "$$(which $(APP))" ] && echo "1"
+APP_HAS_MODE			:= $(if $(DOCKERIZE),$(IMAGE_HAS),$(APP_HAS))
+APP_GET_MODE			:= $(if $(DOCKERIZE),$(IMAGE_GET),app_install)
+APP_GET					:= $(if $(shell $(APP_HAS_MODE)),,$(APP_GET_MODE))
+
+
+
+############################## APP SPECIFIC PRE-PROCCESSING ####################
+
+# General pipeline's data files: suffixes.
+SFX							?= .txt
+INPUT						?= $(RUNNING_DIR)
+
+
+# Validate INPUTS against emptyness.
+INPUTS_PROCESSED			:= $(word 1, $(abspath $(strip $(wildcard $(MP_INPUTS_l)))))
+$(if $(INPUTS_PROCESSED),, $(error No input candidates in $(INPUTS_d) folder))
+
+
+# Search and validate INPUTS from a given string list, directory, or file, by
+# the SUFFIXES list criteria.
+#INPUTS_PROCESSED			:= $(shell $(SCRIPTS)/ufinder.sh $(INPUTS_PROCESSED) $(SUFFIXES))
+
+# A limited alternative validation process (without 'ufinder' script).
+INPUTS_PROCESSED			:= $(if $(shell [ -f "$(INPUTS_PROCESSED)" ] && echo "1"),$(filter %$(SFX), $(shell cat $(INPUTS_PROCESSED))),$(wildcard $(INPUTS_PROCESSED)/*$(SFX)))
+INPUTS_PROCESSED			:= $(abspath $(strip $(wildcard $(INPUTS_PROCESSED))))
+$(if $(INPUTS_PROCESSED),, $(error No valid $(SFX) file specified))
+
+
+# ATTENTION: Variables that are string lists has an '_l' suffix appendedd to
+# the end of their names. Their behavior differently in pattern rules.
+
+
+# Folder for timestamps.
+TMSTP_d					:= $(OUTPUTS_d)/tmstp
+
+
+# Carrefully set the INPUTS_l variable after success validations.
+INPUTS_l				:= $(INPUTS_PROCESSED)
+INPUTS_FILENAME_l		:= $(strip $(notdir $(INPUTS_l)))
+INPUTS_BASENAME_l		:= $(strip $(basename $(notdir $(INPUTS_l))))
+INPUTS_dl				:= $(strip $(dir $(INPUTS_l)))
+#INPUTS_BASENAME_dl		:=
+
+
+#OUTPUTS_l				:=
+#OUTPUTS_FILENAME_l		:=
+#OUTPUTS_BASENAME_l		:=
+#OUTPUTS_dl				:=
+OUTPUTS_BASENAME_dl		:= $(addprefix $(OUTPUTS_d)/, $(INPUTS_BASENAME_l))
+OUTPUTS_l				:= $(strip $(join $(OUTPUTS_BASENAME_dl), $(addprefix /, $(INPUTS_FILENAME_l))))
+#OUTPUTS_l				:= $(OUTPUTS_l:.bam=.sorted.bam)
+
+
+# Derivated lists: '.bai', '.abnormal', '.disc', '.disc.bai' and others.
+OUTPUTS_BAM_l			:= $(OUTPUTS_l)
+OUTPUTS_BAI_l			:= $(addsuffix .bai, $(OUTPUTS_l))
+OUTPUTS_ABNORMAL_l		:= $(addsuffix .abnormal, $(OUTPUTS_l))
+OUTPUTS_DISC_l			:= $(addsuffix .disc, $(OUTPUTS_l))
+OUTPUTS_DISC_BAI_l		:= $(addsuffix .disc.bai, $(OUTPUTS_l))
+OUTPUTS_DISC_FQ_l		:= $(addsuffix .disc.fq, $(OUTPUTS_l))
+
+# Timestamp lists, terminated in '_lt'.
+# Lists for individual analysis.
+OUTPUTS_HERVK_INDIV_lt	:= $(addsuffix .hervk.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_LINE1_INDIV_lt	:= $(addsuffix .line1.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_ALU_INDIV_lt	:= $(addsuffix .alu.indiv.tmstp, $(OUTPUTS_l))
+OUTPUTS_SVA_INDIV_lt	:= $(addsuffix .sva.indiv.tmstp, $(OUTPUTS_l))
+
+# Simple timestamps files for group analysis.
+OUTPUTS_HERVK_GRP_t		:= $(TMSTP_d)/common.bam.hervk.group.tmstp
+OUTPUTS_LINE1_GRP_t		:= $(TMSTP_d)/common.bam.line1.group.tmstp
+OUTPUTS_ALU_GRP_t		:= $(TMSTP_d)/common.bam.alu.group.tmstp
+OUTPUTS_SVA_GRP_t		:= $(TMSTP_d)/common.bam.sva.group.tmstp
+
+# Lists for genotype analysis.
+OUTPUTS_HERVK_GEN_lt	:= $(addsuffix .hervk.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_LINE1_GEN_lt	:= $(addsuffix .line1.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_ALU_GEN_lt		:= $(addsuffix .alu.gen.tmstp, $(OUTPUTS_l))
+OUTPUTS_SVA_GEN_lt		:= $(addsuffix .sva.gen.tmstp, $(OUTPUTS_l))
+
+# Simple VCF files.
+OUTPUTS_HERVK_VCF		:= $(HERVK_DISCOVERY_d)/HERVK.final_comp.vcf
+OUTPUTS_LINE1_VCF		:= $(LINE1_DISCOVERY_d)/LINE1.final_comp.vcf
+OUTPUTS_ALU_VCF			:= $(ALU_DISCOVERY_d)/ALU.final_comp.vcf
+OUTPUTS_SVA_VCF			:= $(SVA_DISCOVERY_d)/SVA.final_comp.vcf
+
+# Lazzy evaluation variable.
+REQ						= $(filter %$(*F)$(SFX), $(INPUTS_l))
+
+
+# Last preamble command: export all.
+export
+
+
+
+############################## DEBUG CODE ######################################
+
+ifeq ($(DBG),yes)
+$(info ****************************** DEBUG *******************************************)
+
+$(info USER:$(USER).)
+$(info DATE:$(DATE).)
+$(info )
+
+$(info General App variables.)
+$(info APP:$(APP).)
+$(info VERSION:$(VERSION).)
+$(info ID:$(ID).)
+$(info )
+
+$(info Current paths.)
+$(info ROOT_DIR:$(ROOT_DIR))
+$(info RUNNING_DIR:$(RUNNING_DIR))
+$(info CURDIR:$(CURDIR).)
+$(info PWD:$(PWD).)
+$(info prefix:$(prefix).)
+$(info )
+
+$(info PATH:$(PATH).)
+$(info )
+
+$(info Configuration files.)
+$(info CONFIGFILE:$(CONFIGFILE).)
+$(info DFT_CONFIG:$(DFT_CONFIG).)
+$(info CONFIG_f:$(CONFIG_f).)
+$(info )
+
+$(info Main runtime parameters.)
+$(info ENCAPSULATE:$(ENCAPSULATE).)
+$(info CLOUDERIZE:$(CLOUDERIZE).)
+$(info CLOUDFILE:$(CLOUDFILE).)
+$(info DOCKERIZE:$(DOCKERIZE).)
+$(info DOCKERFILE:$(DOCKERFILE).)
+$(info IMAGE:$(IMAGE).)
+$(info MAKERIZE:$(MAKERIZE).)
+$(info MAKEFILE:$(MAKEFILE).)
+$(info TARBALL:$(TARBALL).)
+$(info )
+
+$(info CMD:$(CMD).)
+$(info )
+
+$(info INFRASTRUCTURE_dl:$(INFRASTRUCTURE_dl).)
+$(info )
+
+$(info Inputs and arguments.)
+$(info SFX:$(SFX).)
+$(info INPUT:$(INPUT).)
+$(info INPUTS_PROCESSED:$(INPUTS_PROCESSED).)
+$(info INPUTS_l:$(INPUTS_l).)
+$(info OUTPUTS_l:$(OUTPUTS_l).)
+$(info )
+
+$(info ARGS:$(ARGS).)
+$(info CAPSULE_GET:$(CAPSULE_GET).)
+$(info REFERENCE_GENOME:$(REFERENCE_GENOME).)
+
+$(info ********************************************************************************) 
+endif
+
+
+# Emergency estop.
+ifeq ($(STP),yes)
+$(error Emergency stop)
+endif
+
+
+
+############################## GENERAL TARGETS #################################
+
+help:
+	@$(ECHO) "Usage:\n"
+	@$(ECHO) "\tmake [options] target [ARGS=\"arg1 arg2 ...\"]"
+
+
+$(APP): $(USE_MODE) # app_docker_run or app_native_run
+	@$(ECHO) "All done."
+
+app_docker_run: image_run
+
+app_native_run: app_has inputs | infra internet_has
+	@$(ECHO) "Running $(APP) natively ..."
+	#$(APP) $(ARGS)
+	@$(ECHO) "Done.\n"
+
+app_has: $(APP_GET) # app_install.
+	@$(ECHO) "This system has $(APP).\n"
+
+app_install: app_build
+	@$(ECHO) "Installing $(APP)."
+	#install $(APP)
+	@$(ECHO) "Done.\n"
+
+app_build: app_deps tarball_has
+	@$(ECHO) "Building $(APP)."
+	#cd $(TARBALL)
+	#./configure
+	#$(MAKE)
+	@$(ECHO) "Done.\n"
+
+tarball_has: $(TARBALL_GET) # tarball or repo
+	@$(ECHO) "This system has $(APP) tarball.\n"
+
+tarball: $(TARBALL)
+
+$(TARBALL): | internet_has
+	@$(ECHO) "Downloading tarball for $(APP)-$(VERSION) from $<."
+	wget $(REPO)/archive/master.tar.gz
+	#tar xzvf $(notdir $<) # -C $(TMP_d)
+	@$(ECHO) "Done.\n"
+
+repo: | git_has internet_has
+	@$(ECHO) "Cloning repository of $(APP)-$(VERSION) from $<."
+	#git clone $<
+	@$(ECHO) "Done.\n"
+
+
+app_deps: #$(APP_DEPS_GET)
+	@$(ECHO) "This system has the $(APP) dependecies.\n"
+
+
+internet_has: $(INTERNET_GET) # internet_configure
+	@$(ECHO) "This system has internet connection.\n"
+
+internet_configure:
+	@$(ECHO) "Trying to configure system's internet..."
+	#systemctl ...
+	@$(ECHO) "ERROR: You need to have internet access to proceed."
+	exit 1
+
+
+
+#infra: | $(CAPSULE) $(INFRASTRUCTURE_dl)
+
+#$(CAPSULE) $(INFRASTRUCTURE_dl):
+#	@$(ECHO) "Creating directory $@."
+#	#$(MKDIR) $@
+#	@$(ECHO) "Done.\n"
+
+clean: | $(INFRASTRUCTURE_dl)
+	@$(ECHO) "Removing directory $@."
+	#$(RM) $@
+	@$(ECHO) "Done.\n"
+
+inputs: #$(INPUTS)
+	@$(ECHO) "Validating inputs."
+	#./validate.sh jhgkjh
+	@$(ECHO) "Done.\n"
+
+
+test:
+	@$(ECHO) "This is a simple test for arguments:\"$(ARGS)\"."
+
+# Obligatory targets.
+.PHONY:
+
+
+
+############################## GIT SPECIFIC TARGETS ############################
+
+git_has:
+
+
+############################## DOCKER SPECIFIC TARGETS #########################
+
+image_run: docker_has image_has | $(INFRASTRUCTURE_dl) # internet_has
+	@$(ECHO) "Running docker image $(IMAGE) ..."
+	#$(DOCKER_RUN) $(DOCKER_ARGS) $(IMAGE) $(ARGS)
+	@$(ECHO) "Done.\n"
+
+image_has: $(IMAGE_GET) # image_build or image_pull
+	@$(ECHO) "This system has docker image $(IMAGE).\n"
+
+image_build: docker_has dockerfile_has | internet_has
+	@$(ECHO) "Building Sandy..."
+	#$(DOCKER_BUILD) -t $(IMAGE) - < $(DOCKERFILE)
+	@$(ECHO) "Done.\n"
+
+dockerfile_has: $(DOCKERFILE_GET) # dockerfile_get
+	@$(ECHO) "This system has dockerfile for image $(IMAGE).\n"
+
+dockerfile_get:
+	@$(ECHO) "Processing Dockerfile for $(APP).\n"
+	@$(ECHO) "Done.\n"
+
+image_pull: docker_has | internet_has
+	@$(ECHO) "Pulling Docker image: $(IMAGE)..."
+	#docker pull $(IMAGE)
+	@$(ECHO) "Done.\n"
+
+
+
+docker_has: $(DOCKER_GET) # docker_install
+	@$(ECHO) "This system has docker.\n"
+
+docker_install: docker_build
+	@$(ECHO) "Installing Docker..."
+	#cd $(DOCKER_TARBALL)
+	#./configure
+	#$(MAKE) && $(MAKE) install
+	#sudo cp $(subst .tgz,,$(DOCKER_TARBALL))/* /usr/bin/
+	#sudo dockerd &
+	@$(ECHO) "Done.\n"
+
+docker_build: $(DOCKER_TARBALL)
+
+$(DOCKER_TARBALL): | internet_has $(TMP_d)
+	@$(ECHO) "Downloading and unpacking Docker tarball..."
+	#wget $(DOCKER_TARBALL_URL) -P $@
+	#tar xzvf $@ -C $(TMP_d)
+	#$(ECHO) "Done.\n"
+
+cpanm_has: $(CPANM_GET)
+	@$(ECHO) "This system has cpanm.\n"
+
+cpanm_install: $(CPANM_MAKEFILE) # cpanm.mk
+	@$(ECHO) "Installing cpanm.\n"
+	#$(MAKE) -f $(scripts)/cpanm.mk $<
+	@$(ECHO) "Done.\n"
+
+
+
+# Obligatory targets.
+.PHONY:
+
+
+
+############################## OPERATIONAL TARGETS #############################
+
+all: publish
+	$(ECHO) "All done."
+
+publish: plot
+	$(ECHO) "Publishing data..."
+	# adfvadf
+	$(ECHO) "Done.\n"
+
+
+plot: modelate
+	$(ECHO) "Ploting data..."
+
+
+modelate: data
+	$(ECHO) "Modelating data..."
+
+
+data:# create prepare2 search convert sort3 index3
+	$(ECHO) "Agregating data..."
+
+
+index3:
+	$(ECHO) "Indexing data..."
+
+
+sort3:
+	$(ECHO) "Sorting data..."
+
+
+convert:
+	$(ECHO) "Converting data..."
+
+
+search:
+	$(ECHO) "Searching data..."
+
+
+prepare2:
+	$(ECHO) "Preparing data ..."
+
+
+create: validate
+	$(ECHO) "Creating data ..."
+
+
+validate2:
+	$(ECHO) "Validating data ..."
+
+
+
+############################## APP SPECIFIC TARGETS ############################
+
+$(PDF_fl): %.pdf: $(TSV_fl)
+	$(ECHO) "Training model ..."
+	R --vanilla --slave --args $< $@ < $(R_MODEL)
+	$(ECHO) "Done.\n"
+
+$(TSV_fl): %.tsv: %.sorted.bam | index_ref
+	$(ECHO) "Searching on genome from the FASTA file $< ..."
+	perl $(scripts)/neopipe.pl search -i $< -d $(REFERENCE_PERLDB) \
+		-a $(VARIATIONS_FILE) -j $(JOBS) > $@
+	$(ECHO) "Done.\n"
+
+index_ref: $(REFERENCE_FASTA)
+	$(ECHO) "Indexing reference genome from the FASTA file $< ..."
+	perl $(scripts)/neopipe.pl index -i $(REFERENCE_FASTA) -d $(outputs)/$(basename $(REFERENCE_FASTA)).perldb -j $(JOBS)
+	$(ECHO) "Done.\n"
+	
+index2: $(SORTED_BAM_BAI_fl)
+	$(ECHO) "All BAI files indexed ..."
+
+$(SORTED_BAM_BAI_fl): %.sorted.bam.bai: %.sorted.bam
+	$(ECHO) "Indexing $< ..."
+	samtools index -@ 10 $< $@
+	$(ECHO) "Done.\n"
+
+sort2: $(SORTED_BAM_fl)
+	$(ECHO) "All BAM files sorted ..."
+
+$(SORTED_BAM_fl): %.sorted.bam: %.sam
+	$(ECHO) "Sorting $< ..."
+	samtools sort -O BAM -m 2G -@ 12 $< -o $@
+	#touch $@
+	$(ECHO) "Done.\n"
+
+align: $(SAM_fl)
+	$(ECHO) "All FASTq files aligned ..."
+
+$(BAM_fl): %.bam: %_R1_001.fastq.gz
+	bwa mem -t 12 $(FASTA) $< $(<:_R1_001.fastq.gz=_R2_001.fastq.gz) > $@
+	#touch $@
+	$(ECHO) "Done.\n"
+
+$(SAM_fl): %.sam: %_R1_001.fastq.gz
+	bwa mem -t 12 $(FASTA) $< $(<:_R1_001.fastq.gz=_R2_001.fastq.gz) > $@
+	#touch $@
+	$(ECHO) "Done.\n"
+
+simulate2: $(FASTQ_fl)
+	$(ECHO) "All files created ..."
+
+
+.SECONDEXPANSION:
+$(FASTQ_fl): %_R1_001.fastq.gz: $$(REQ) $(FASTA) $(IMAGE_ALTERATE) | $(CAPSULE)
+	$(ECHO) "Preparing data ..."
+	$(MAKE) -f $(SUB_MAKE) all prefix="$(prefix)" DBG="no" STP="no" \
+			IMAGE="$(if $(IMAGE_ALTERATE),$(IMAGE_ALT),$(IMAGE))" ARGS="$(ARGS)" -j $(JOBS)
+	#touch $@
+	$(ECHO) "Done.\n"
+
+
+$(PARAMS_l):
+
+
+image_alterate: image_register
+	$(ECHO) "Commit the altered image $(IMAGE) as $(IMAGE_ALT)."
+	docker commit $(CONTAINER_ID) $(IMAGE_ALT)
+	docker rm $(CONTAINER_ID)
+	$(ECHO) "Done.\n"
+
+image_register: ARGS := variation add $(VARIATIONS) $(notdir $(VARIATIONS_FILE))
+image_register: $(VARIATIONS_FILE)
+	$(ECHO) "Alterate image $(IMAGE) to register variation file: $<."
+	docker run -ti -w /home -v $<:/home/$(notdir $<) $(IMAGE) $(ARGS)
+	$(ECHO) "Done.\n"
+
+
+docker_run: | infra
+	$(info )
+	$(info Run docker image with MELT command.)
+	$(DOCKER_RUN) \
+		$(DOCKER_FLAGS) \
+		-u 1541:1000 \
+		-w $(C_BASE_d) \
+		-v $(H_CONFIG_d):$(C_CONFIG_d) \
+		-v $(H_INPUTS_d):$(C_INPUTS_d) \
+		-v $(H_OUTPUTS_d):$(C_OUTPUTS_d) \
+		-v $(H_ASSETS_d):$(C_ASSETS_d) \
+		-v $(H_REFERENCE_d):$(C_REFERENCE_d) \
+		-v $(H_ANNOTATION_d):$(C_ANNOTATION_d) \
+		-v $(H_EXTRA_d):$(C_EXTRA_d) \
+		-v $(H_TMP_d):$(C_TMP_d) \
+		$(PIPELINE) $(ARGS)
+
+# Obligatory targets.
+.PHONY:
+
+
+
+############################## MELT MAIN TARGETS ###############################
+
+
+vcf: all_vcf
+	$(info )
+	$(info $(CALL) All done!)
+
+
+
+############################## MAKE VCF ########################################
+
+# Note: VCF are made for all BAMs together, so it can't run in parallel.
+
+# Token target:
+all_vcf: hervk_vcf line1_vcf alu_vcf sva_vcf
+hervk_vcf: $(OUTPUTS_HERVK_VCF)
+line1_vcf: $(OUTPUTS_LINE1_VCF)
+alu_vcf: $(OUTPUTS_ALU_VCF)
+sva_vcf: $(OUTPUTS_SVA_VCF)
+
+$(OUTPUTS_HERVK_VCF): %HERVK.final_comp.vcf: $(OUTPUTS_HERVK_GEN_lt)
+	$(info )
+	$(info $(CALL) Create VCF for HERVK from files $^.)
+	$(MAKE_VCF) \
+		-genotypingdir $(HERVK_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(HERVK_ZIP) \
+		-w $(HERVK_DISCOVERY_d) \
+		-p $(HERVK_DISCOVERY_d) \
+		-o $(@D)
+
+$(OUTPUTS_LINE1_VCF): %LINE1.final_comp.vcf: $(OUTPUTS_LINE1_GEN_lt)
+	$(info )
+	$(info $(CALL) Create VCF for LINE1 from files $^.)
+	$(MAKE_VCF) \
+		-genotypingdir $(LINE1_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(LINE1_ZIP) \
+		-w $(LINE1_DISCOVERY_d) \
+		-p $(LINE1_DISCOVERY_d) \
+		-o $(@D)
+
+$(OUTPUTS_ALU_VCF): %ALU.final_comp.vcf: $(OUTPUTS_ALU_GEN_lt)
+	$(info )
+	$(info $(CALL) Create VCF for ALU from files $^.)
+	$(MAKE_VCF) \
+		-genotypingdir $(ALU_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(ALU_ZIP) \
+		-w $(ALU_DISCOVERY_d) \
+		-p $(ALU_DISCOVERY_d) \
+		-o $(@D)
+
+$(OUTPUTS_SVA_VCF): %SVA.final_comp.vcf: $(OUTPUTS_SVA_GEN_lt)
+	$(info )
+	$(info $(CALL) Create VCF for SVA from files $^.)
+	$(MAKE_VCF) \
+		-genotypingdir $(SVA_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(SVA_ZIP) \
+		-w $(SVA_DISCOVERY_d) \
+		-p $(SVA_DISCOVERY_d) \
+		-o $(@D)
+
+
+
+############################## GENOTYPING ######################################
+
+# Token target:
+all_gen: hervk_gen line1_gen alu_gen sva_gen
+hervk_gen: $(OUTPUTS_HERVK_GEN_lt)
+line1_gen: $(OUTPUTS_LINE1_GEN_lt)
+alu_gen: $(OUTPUTS_ALU_GEN_lt)
+sva_gen: $(OUTPUTS_SVA_GEN_lt)
+
+$(OUTPUTS_HERVK_GEN_lt): %.bam.hervk.gen.tmstp: %.bam $(OUTPUTS_HERVK_GRP_t)
+	$(info )
+	$(info $(CALL) Genotyping HERVK in file $<.)
+	$(GENOTYPE) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(HERVK_ZIP) \
+		-w $(HERVK_DISCOVERY_d) \
+		-p $(HERVK_DISCOVERY_d)
+	touch $@
+
+$(OUTPUTS_LINE1_GEN_lt): %.bam.line1.gen.tmstp: %.bam $(OUTPUTS_LINE1_GRP_t)
+	$(info )
+	$(info $(CALL) Genotyping LINE1 in file $<.)
+	$(GENOTYPE) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(LINE1_ZIP) \
+		-w $(LINE1_DISCOVERY_d) \
+		-p $(LINE1_DISCOVERY_d)
+	touch $@
+
+$(OUTPUTS_ALU_GEN_lt): %.bam.alu.gen.tmstp: %.bam $(OUTPUTS_ALU_GRP_t)
+	$(info )
+	$(info $(CALL) Genotyping ALU in file $<.)
+	$(GENOTYPE) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(ALU_ZIP) \
+		-w $(ALU_DISCOVERY_d) \
+		-p $(ALU_DISCOVERY_d)
+	touch $@
+
+$(OUTPUTS_SVA_GEN_lt): %.bam.sva.gen.tmstp: %.bam $(OUTPUTS_SVA_GRP_t)
+	$(info )
+	$(info $(CALL) Genotyping SVA in file $<.)
+	$(GENOTYPE) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(SVA_ZIP) \
+		-w $(SVA_DISCOVERY_d) \
+		-p $(SVA_DISCOVERY_d)
+	touch $@
+
+
+
+############################## GROUP ANALYSES ##################################
+
+# Note: Group analysis are made for all together, so it can't run in parallel.
+
+# Token target:
+all_group: hervk_group line1_group alu_group sva_group
+hervk_group: $(OUTPUTS_HERVK_GRP_t)
+line1_group: $(OUTPUTS_LINE1_GRP_t)
+alu_group: $(OUTPUTS_ALU_GRP_t)
+sva_group: $(OUTPUTS_SVA_GRP_t)
+
+$(OUTPUTS_HERVK_GRP_t): $(OUTPUTS_HERVK_INDIV_lt) | $(TMSTP_d)
+	$(info )
+	$(info $(CALL) Group analysis of HERVK on files $^.)
+	$(GROUP_ANALYSIS) \
+		-discoverydir $(HERVK_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(HERVK_ZIP) \
+		-w $(HERVK_DISCOVERY_d) \
+		-n $(REFERENCE_BED)
+	touch $@
+
+$(OUTPUTS_LINE1_GRP_t): $(OUTPUTS_LINE1_INDIV_lt) | $(TMSTP_d)
+	$(info )
+	$(info $(CALL) Group analysis of LINE1 on files $^.)
+	$(GROUP_ANALYSIS) \
+		-discoverydir $(LINE1_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(LINE1_ZIP) \
+		-w $(LINE1_DISCOVERY_d) \
+		-n $(REFERENCE_BED)
+	touch $@
+
+$(OUTPUTS_ALU_GRP_t): $(OUTPUTS_ALU_INDIV_lt) | $(TMSTP_d)
+	$(info )
+	$(info $(CALL) Group analysis of ALU on files $^.)
+	$(GROUP_ANALYSIS) \
+		-discoverydir $(ALU_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(ALU_ZIP) \
+		-w $(ALU_DISCOVERY_d) \
+		-n $(REFERENCE_BED)
+	touch $@
+
+$(OUTPUTS_SVA_GRP_t): $(OUTPUTS_SVA_INDIV_lt) | $(TMSTP_d)
+	$(info )
+	$(info $(CALL) Group analysis of SVA on files $^.)
+	$(GROUP_ANALYSIS) \
+		-discoverydir $(SVA_DISCOVERY_d) \
+		-h $(REFERENCE_GENOME) \
+		-t $(SVA_ZIP) \
+		-w $(SVA_DISCOVERY_d) \
+		-n $(REFERENCE_BED)
+	touch $@
+
+
+
+############################## INDIVIDUAL ANALYSES #############################
+
+# Token target:
+all_indiv: hervk_indiv line1_indiv alu_indiv sva_indiv
+hervk_indiv: $(OUTPUTS_HERVK_INDIV_lt)
+line1_indiv: $(OUTPUTS_LINE1_INDIV_lt)
+alu_indiv: $(OUTPUTS_ALU_INDIV_lt)
+sva_indiv: $(OUTPUTS_SVA_INDIV_lt)
+
+# Setting timestamps for several MEI types processes.
+$(OUTPUTS_HERVK_INDIV_lt): %.bam.hervk.indiv.tmstp: %.bam %.bam.disc
+	$(info )
+	$(info $(CALL) Individual analysis of HERVK in file $<.)
+	$(INDIV_ANALYSIS) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(HERVK_ZIP) \
+		-w $(HERVK_DISCOVERY_d) \
+		-c $(BAM_COVERAGE)
+	touch $@
+
+$(OUTPUTS_LINE1_INDIV_lt): %.bam.line1.indiv.tmstp: %.bam %.bam.disc
+	$(info )
+	$(info $(CALL) Individual analysis of LINE1 in file $<.)
+	$(INDIV_ANALYSIS) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(LINE1_ZIP) \
+		-w $(LINE1_DISCOVERY_d) \
+		-c $(BAM_COVERAGE)
+	touch $@
+
+$(OUTPUTS_ALU_INDIV_lt): %.bam.alu.indiv.tmstp: %.bam %.bam.disc
+	$(info )
+	$(info $(CALL) Individual analysis of ALU in file $<.)
+	$(INDIV_ANALYSIS) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(ALU_ZIP) \
+		-w $(ALU_DISCOVERY_d) \
+		-c $(BAM_COVERAGE)
+	touch $@
+
+$(OUTPUTS_SVA_INDIV_lt): %.bam.sva.indiv.tmstp: %.bam %.bam.disc
+	$(info )
+	$(info $(CALL) Individual analysis of SVA in file $<.)
+	$(INDIV_ANALYSIS) \
+		-bamfile $< \
+		-h $(REFERENCE_GENOME) \
+		-t $(SVA_ZIP) \
+		-w $(SVA_DISCOVERY_d) \
+		-c $(BAM_COVERAGE)
+	touch $@
+
+
+
+############################## PREPROCESSING ###################################
+
+# Token target:
+preprocess: $(OUTPUTS_DISC_l)
+
+# Preprocessing BAMs.
+$(OUTPUTS_DISC_l): %.bam.disc: %.bam %.bam.bai $(REFERENCE_GENOME)
+	$(info )
+	$(info $(CALL) Preprocessing file $<.)
+	$(PREPROCESS) -bamfile $< -h $(REFERENCE_GENOME)
+
+
+# Projects' complementary infastructure directories.
+$(HERVK_d) $(LINE1_d) $(ALU_d) $(SVA_d) $(TMSTP_d):
+	$(info )
+	$(info $(CALL) Create directory: $@.)
+	mkdir -p $@
+
+
+
+############################## COMMON TARGETS ##################################
+
+# Token target:
+index: $(OUTPUTS_BAI_l) 
+	@$(ECHO) "All files indexed.\n"
+
+# Make .bai files list.
+$(OUTPUTS_BAI_l): %.bam.bai: %.bam
+	@$(ECHO) "Indexing file $^..."
+	if [ -s "$$(readlink -f $<).bai" ]; then \
+		ln -sf "$$(readlink -f $<).bai" $@; \
+	else \
+		samtools index -b -@ 8 $< $@; \
+	fi
+	@$(ECHO) "Done.\n"
+
+sort: $(OUTPUTS_BAM_l)
+	@$(ECHO) "All files sorted.\n"
+
+.SECONDEXPANSION:
+$(OUTPUTS_BAM_l): %.bam: $$(REQ) | prepare
+	@$(ECHO) "Creating link for input file: $(REQ) -- $^."
+	mkdir -p $(*D)
+	if [ "$$(samtools view -H $< 2> /dev/null | head -n1 | cut -f3)" = "SO:coordinate" ]; then \
+		ln -sf "$$(readlink -f $<)" $@; \
+	elif [ -s "$$(find $$(dirname $$(readlink -f $<)) -type f -name '*$(*F)*.sorted.bam')" ]; then \
+		ln -sf "$$(find $$(dirname $$(readlink -f $<)) -type f -name '*$(*F)*.sorted.bam')" $@; \
+	else \
+		samtools sort -O BAM -m 4G -@ 8 $< -o $@; \
+	fi
+	@$(ECHO) "Done.\n"
+
+
+prepare: validate | infrastructure
+	@$(ECHO) "Environment prepared.\n"
+
+
+infrastructure: mappings
+	@$(ECHO) "Infrastructure mounted.\n"
+
+
+mappings: $(MAPPINGS_sl)
+
+
+.SECONDEXPANSION:
+$(MAPPINGS_sl): $$($$@) | capsule_has
+	@$(ECHO) "Mappings for $(subst _l,_d,$(patsubst MP_%,%,$@)):$^.\n"
+	#for i in $^; do \
+	#	if [ -f $$i ]; then \
+	#		[ "$$(dirname $$i)" == "$(prefix)" ] || ln -sf $$(readlink -f $$i) $(prefix)/$$(basename $$i)
+	#	else \
+	#		echo "Couldn\'t map file $$i to $(subst _l,_d,$(patsubst MP_%,%,$@))." \
+	#		exit 1; \
+	#	fi \
+	#done
+	@$(ECHO) "Done.\n"
+
+capsule_has: $(CAPSULE_GET)
+	@$(ECHO) "Capsule ready on:$(CAPSULE).\n"
+
+capsule_mount:
+	@$(ECHO) "Mounting capsule...\n"
+	$(MKDIR) $(INFRASTRUCTURE_dl)
+	@$(ECHO) "Done.\n"
+
+
+
+
+#.SECONDEXPANSION:
+#$(INFRASTRUCTURE_dl): $$(MP_$(filter %_d,$(INFRASTRUCTURE_sl))_fl)
+#	@$(ECHO) "Ver $@ e $^.\n"
+
+
+validate:
+	@$(ECHO) "All dependent files validated.\n"
